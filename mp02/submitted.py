@@ -5,7 +5,12 @@ There are several function definitions, here, that raise RuntimeErrors.  You sho
 each "raise RuntimeError" line with a line that performs the function specified in the
 function's docstring.
 '''
-
+###################################
+        # ECE 448 MP02
+        # Jie Wang
+        # jiew5
+        # 1/30/2023
+###################################
 import numpy as np
 from collections import Counter
 
@@ -21,7 +26,14 @@ def create_frequency_table(train):
     frequency (dict of Counters) 
         - frequency[y][x] = number of tokens of word x in texts of class y
     '''
-    raise RuntimeError("You need to write this part!")
+    frequency = {}
+    for class_type in train.keys():
+        frequency[class_type] = Counter()
+        for text in train[class_type]:  
+            for word in text:
+                    frequency[class_type][word] += 1
+
+    return frequency
 
 def remove_stopwords(frequency):
     '''
@@ -34,7 +46,12 @@ def remove_stopwords(frequency):
         - nonstop[y][x] = frequency of word x in texts of class y,
           but only if x is not a stopword.
     '''
-    raise RuntimeError("You need to write this part!")
+    nonstop = frequency
+    for class_type in frequency.keys():
+        # nonstop[class_type] = Counter(frequency)
+        for word in stopwords:
+                del nonstop[class_type][word]
+    return nonstop
 
 def laplace_smoothing(nonstop, smoothness):
     '''
