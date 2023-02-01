@@ -11,6 +11,9 @@ function's docstring.
         # jiew5
         # 1/30/2023
 ###################################
+
+# Note: discussed some idea with my dear roommate Yitao Cai [netid: yitaoc3]
+
 import numpy as np
 from collections import Counter
 
@@ -46,9 +49,9 @@ def remove_stopwords(frequency):
         - nonstop[y][x] = frequency of word x in texts of class y,
           but only if x is not a stopword.
     '''
-    nonstop = frequency
+    nonstop = {} # Note, there must create new dict to hold the nonstop 
     for class_type in frequency.keys():
-        # nonstop[class_type] = Counter(frequency)
+        nonstop[class_type] = Counter(frequency[class_type]) # else the freq will be modified
         for word in stopwords:
                 del nonstop[class_type][word]
     return nonstop
@@ -69,7 +72,21 @@ def laplace_smoothing(nonstop, smoothness):
     Be careful that your vocabulary only counts words that occurred at least once
     in the training data for class y.
     '''
-    raise RuntimeError("You need to write this part!")
+    likelihood = {}
+    
+    for class_type in nonstop.keys():
+        likelihood[class_type] = {}
+        S= sum(nonstop[class_type].values())
+        NumberofWords = len( nonstop[class_type].keys() )
+
+        for word in nonstop[class_type]:
+            # Note, I wrongly recoginzed number of words before
+            numerator = (nonstop[class_type][word] + smoothness) 
+            denominator = smoothness *(NumberofWords + 1) + S
+            likelihood[class_type][word] = float(numerator) / float( denominator )
+        likelihood[class_type]['OOV'] = smoothness / float(denominator)
+
+    return likelihood
 
 def naive_bayes(texts, likelihood, prior):
     '''
@@ -85,7 +102,30 @@ def naive_bayes(texts, likelihood, prior):
     hypotheses (list)
         - hypotheses[i] = class label for the i'th text
     '''
-    raise RuntimeError("You need to write this part!")
+    hypotheses = []
+   
+    for text in texts:
+        logProbability = {'pos': np.log(prior),'neg':np.log(1- prior)}
+        for word in text:
+            if word in stopwords:
+                continue
+            for y in logProbability.keys():
+                if word not in likelihood[y].keys():
+                    logProbability[y] += np.log(likelihood[y]['OOV'])
+                else:
+                    logProbability[y] += np.log(likelihood[y][word])
+            
+                
+                #
+        if logProbability['pos'] >= logProbability["neg"]:
+            hypotheses.append( 'pos')
+        else:
+            hypotheses.append('neg')
+        
+            
+    return hypotheses
+
+
 
 def optimize_hyperparameters(texts, labels, nonstop, priors, smoothnesses):
     '''
@@ -106,5 +146,17 @@ def optimize_hyperparameters(texts, labels, nonstop, priors, smoothnesses):
         - accuracies[m,n] = dev set accuracy achieved using the
           m'th candidate prior and the n'th candidate smoothness
     '''
-    raise RuntimeError("You need to write this part!")
+    accuracies = np.zeros( (len(priors),len(smoothnesses)) )
+    for m in range(len(priors)):
+        for n in range(len(smoothnesses)):
+            likelihood = laplace_smoothing(nonstop,smoothnesses[n])
+            hypotheses = naive_bayes(texts, likelihood, priors[m])
+            # Cite from the notebook, calculate the accuracy
+            count_correct = 0
+            for (y,yhat) in zip(labels, hypotheses):
+                if y==yhat:
+                    count_correct += 1
+                
+            accuracies[m,n] = count_correct / len(labels)
+    return accuracies
                           
