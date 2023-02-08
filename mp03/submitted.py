@@ -6,6 +6,7 @@ each "raise RuntimeError" line with a line that performs the function specified 
 function's docstring.
 '''
 import numpy as np
+import warnings # Cite idea from https://blog.csdn.net/xc_zhou/article/details/88130541
 
 def k_nearest_neighbors(image, train_images, train_labels, k):
     '''
@@ -19,8 +20,17 @@ def k_nearest_neighbors(image, train_images, train_labels, k):
     neighbors - a list of k images, the k nearest neighbors of image
     labels - a list of k labels corresponding to the k images
     '''
-
-    raise RuntimeError('You need to write this part!')
+    neighbors = []
+    distance = []
+    labels = []
+    index_array = []
+    for picture in train_images:
+        euclidean_distance = np.linalg.norm(np.array(picture) - np.array(image))
+        distance.append(euclidean_distance)
+    index_array = np.argsort(distance)
+    neighbors = train_images[index_array[list(range(k))]]
+    labels = train_labels[index_array[list(range(k))]]
+    return neighbors, labels
 
 
 def classify_devset(dev_images, train_images, train_labels, k):
@@ -35,8 +45,18 @@ def classify_devset(dev_images, train_images, train_labels, k):
     hypotheses (list) -one majority-vote labels for each of the M dev images
     scores (list) -number of nearest neighbors that voted for the majority class of each dev image
     '''
-    
-    raise RuntimeError('You need to write this part!')
+    hypotheses = []
+    scores = []
+    # One loop
+    for image in dev_images:
+        neighbors, labels = k_nearest_neighbors(image, train_images, train_labels, k)
+        if (sum(labels)> k/2):
+            hypotheses.append(True)
+            scores.append(sum(labels))
+        else:
+            hypotheses.append(False)
+            scores.append(k - sum(labels))
+    return hypotheses, scores
 
 
 def confusion_matrix(hypotheses, references):
@@ -52,5 +72,20 @@ def confusion_matrix(hypotheses, references):
     accuracy (float) - the computed accuracy
     f1(float) - the computed f1 score from the matrix
     '''
-
-    raise RuntimeError('You need to write this part!')
+    accuracy = 0.0
+    f1 = 0.0
+    # no loop 
+    TN = FP = FN = TP = 0
+    N = len(hypotheses)
+    for i,j in zip(hypotheses,references):
+        TN += (i==j and i == 0)
+        FN += (i!=j and i == 0)
+        FP += (i!=j and i == 1)
+        TP += (i==j and i == 1)
+    confusions = np.array( [[TN,FP],[FN,TP]])
+    
+    Precision = TP/(TP+FP)
+    Recall = TP/(TP+FN)
+    accuracy = (TP+TN) / N
+    f1 = 2/(1/Recall+1/Precision)
+    return confusions, accuracy,f1
