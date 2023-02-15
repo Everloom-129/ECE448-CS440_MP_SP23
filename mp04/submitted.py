@@ -24,8 +24,18 @@ class NeuralNet(torch.nn.Module):
         """
         super().__init__()
         ################# Your Code Starts Here #################
+        self.input = 2883
+        self.hidden = 128
+        self.output = 5
+        self.relu = torch.nn.ReLU()
+        self.lr = 0.01
+        self.pred = nn.Sequential(
+            nn.Linear(self.input,self.hidden),
+            self.relu,
+            nn.Linear(self.hidden,self.output),
+            nn.Sigmoid(),
+        )
 
-        raise NotImplementedError("You need to write this part!")
         ################## Your Code Ends here ##################
 
     def forward(self, x):
@@ -39,9 +49,9 @@ class NeuralNet(torch.nn.Module):
             y:      an (N, output_size) tensor of output from the network
         """
         ################# Your Code Starts Here #################
-
+        y = self.pred(x)
+        # print(y.shape)
         return y
-        raise NotImplementedError("You need to write this part!")
         ################## Your Code Ends here ##################
 
 
@@ -76,9 +86,9 @@ def fit(train_dataloader, test_dataloader, epochs):
     Please select an appropriate loss function from PyTorch torch.nn module.
     Please select an appropriate optimizer from PyTorch torch.optim module.
     """
-    loss_fn = None
-    optimizer = None
-    raise NotImplementedError("You need to write this part!")
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(),lr=model.lr) # stochastic gradient decendant
+
     ################## Your Code Ends here ##################
 
 
@@ -114,8 +124,13 @@ def train(train_dataloader, model, loss_fn, optimizer):
     """
 
     ################# Your Code Starts Here #################
-
-    raise NotImplementedError("You need to write this part!")
+    for features, labels in train_dataloader:
+        label_pred = model(features)
+        loss = loss_fn(label_pred, labels)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    
     ################## Your Code Ends here ##################
 
 
@@ -140,3 +155,8 @@ def test(test_dataloader, model, loss_fn):
 
     # test_loss = something
     # print("Test loss:", test_loss)
+    with torch.no_grad():
+        for x, y in test_dataloader:
+                y_pred = model(x)
+                test_loss = loss_fn(y_pred, y)
+                print("Test loss:", test_loss)
