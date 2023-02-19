@@ -27,13 +27,15 @@ class NeuralNet(torch.nn.Module):
         self.input = 2883
         self.hidden = 128
         self.output = 5
-        self.relu = torch.nn.ReLU()
-        self.lr = 0.01
+        self.relu = nn.ReLU()
+        self.sig  = nn.Sigmoid()
+
+        self.lr = 0.11  # modified from 1e-2 to 1e-1, then improve a% from 56% to 63%!
         self.pred = nn.Sequential(
             nn.Linear(self.input,self.hidden),
             self.relu,
             nn.Linear(self.hidden,self.output),
-            nn.Sigmoid(),
+            self.sig
         )
 
         ################## Your Code Ends here ##################
@@ -156,7 +158,7 @@ def test(test_dataloader, model, loss_fn):
     # test_loss = something
     # print("Test loss:", test_loss)
     with torch.no_grad():
-        for x, y in test_dataloader:
-                y_pred = model(x)
-                test_loss = loss_fn(y_pred, y)
+        for features, labels in test_dataloader:
+                label_pred = model(features)
+                test_loss = loss_fn(label_pred, labels)
                 print("Test loss:", test_loss)
