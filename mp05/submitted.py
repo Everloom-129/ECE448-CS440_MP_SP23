@@ -18,8 +18,13 @@ files and classes when code is run, so be careful to not modify anything else.
 # maze is a Maze object based on the maze from the file specified by input filename
 # searchMethod is the search method specified by --method flag (bfs,dfs,astar,astar_multi)
 
-from collections import deque
+# Citation: 
+# 1. Usage of deque https://blog.csdn.net/chl183/article/details/106958004 
+# 2. BFS architecture: https://labuladong.gitee.io/algo/di-ling-zh-bfe1b/bfs-suan-f-463fd/
+# 3. ChatGPT, my prompt tried to generate some A* solution, needs improvement
 
+from collections import deque
+import queue
 def bfs(maze):
     """
     Runs BFS for part 1 of the assignment.
@@ -29,68 +34,50 @@ def bfs(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     # Create a queue for BFS and add the starting position to the queue
-    queue = deque()
-    queue.append(maze.start)
+    bfs_queue = deque()
+    bfs_queue.append(maze.start)
     
     # Create a dictionary to keep track of visited positions
     # initialize the starting position as visited
     visited = {}
     visited[maze.start] = None
-    target = maze.waypoints[0]
 
+    # Set the target position to the first waypoint
+    target = maze.waypoints[0]
     path = []
+    # If the starting position is the same as the target position, 
+    # return the path consisting of just the starting position
     if(maze.start == target):
         path.append(maze.start)
         return path
 
-    # rows = maze.size.y
-    # cols = maze.size.x
-    while(queue): 
-        cur = queue.popleft()
+    while(bfs_queue): 
+        cur = bfs_queue.popleft()# Remove the next position in the queue (FIFO order)
+
+        # If the current position is the target position, reconstruct and return the path
         if(cur == target):
-            path = [cur]
-            while path[-1] != maze.start:
+            path = [cur] # set target as the first point( reverse it later)
+
+            while (path[-1] != maze.start): # Read the whole visited dict
                 path.append(visited[path[-1]])
+
             path.reverse()
             return path
+        
+        # Otherwise, expand the current position by visiting its unvisited neighbors
         x = cur[0]
         y = cur[1]
+        # Get the unvisited neighbors of the current position
         neighbors = maze.neighbors(x,y) # Tuple list ( (a,b),(c,d),...,(e,f))
 
+        # Visit each unvisited neighbor of the current position
         for i in neighbors:
-            if i not in visited and i not in queue:
+            if i not in visited and i not in bfs_queue:
                 visited[i] = cur
-                queue.append(i)
+                bfs_queue.append(i) 
     
-    print(maze.states_explored)
+    # If the target position is not found, return the empty path
     return path
-
-'''
-
-        x = cur[0]
-        y = cur[1]
-        right = (x+1,y)
-        left = (x-1,y)
-        up = (x,y+1)
-        down = (x,y-1)
-
-        if( maze.navigable(right) and visited[right] != True ):
-            visited[right] = True
-            queue.append(right)
-
-        if( maze.navigable(left) and visited[left] != True ):
-            visited[left] = True
-            queue.append(left)
-
-        if( maze.navigable(up) and visited[up] != True ):
-            visited[up] = True
-            queue.append(up)
-
-        if( maze.navigable(down) and visited[down] != True ):
-            visited[down] = True
-            queue.append(down)
-
-'''
 
 def astar_single(maze):
     """
@@ -100,9 +87,66 @@ def astar_single(maze):
 
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
-    #TODO: Implement astar_single
+    start = maze.start
+    goal = maze.waypoints[0]
+    frontier = queue.PriorityQueue()
+    frontier.put(start, 0)
+    came_from = {}
+    cost_so_far = {}
+    came_from[start] = None
+    cost_so_far[start] = 0
 
-    return []
+    while not frontier.empty():
+        current = frontier.get()
+
+        if current == goal:
+            break
+
+        for next in maze.neighbors(current[0], current[1]):
+            new_cost = cost_so_far[current] + 1  # cost to move to the next cell is always 1
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+                cost_so_far[next] = new_cost
+                priority = new_cost + manhattan_distance(goal, next)
+                frontier.put(next, priority)
+                came_from[next] = current
+
+    path = reconstruct_path(came_from, start, goal)
+    return path
+
+def manhattan_distance(a, b):
+    """
+    Computes the Manhattan distance between two points on a grid.
+
+    @param a: A tuple representing the coordinates of the first point (x, y).
+    @param b: A tuple representing the coordinates of the second point (x, y).
+
+    @return: The Manhattan distance between points a and b.
+    """
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def reconstruct_path(came_from, start, goal):
+    """
+    Reconstructs the path from the start to the goal based on the came_from dictionary.
+
+    @param came_from: A dictionary where the keys are cells in the maze, and the values are the cells
+                      that came before them in the shortest path from start to goal.
+    @param start: The starting cell in the maze.
+    @param goal: The goal cell in the maze.
+
+    @return: A list of tuples containing the coordinates of each state in the computed path.
+    """
+    current = goal
+    path = [current]
+
+    while current != start:
+        current = came_from[current]
+        path.append(current)
+
+    path.reverse()
+    return path
+
+
+
 
 # This function is for Extra Credits, please begin this part after finishing previous two functions
 def astar_multiple(maze):
