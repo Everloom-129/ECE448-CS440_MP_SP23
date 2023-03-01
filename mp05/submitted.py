@@ -88,29 +88,38 @@ def astar_single(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     start = maze.start
-    goal = maze.waypoints[0]
+    target = maze.waypoints[0]
     frontier = queue.PriorityQueue()
-    frontier.put(start, 0)
+    
+    frontier.put((0,start))
     came_from = {}
     cost_so_far = {}
     came_from[start] = None
     cost_so_far[start] = 0
 
-    while not frontier.empty():
-        current = frontier.get()
-
-        if current == goal:
+    while frontier:
+        cur = frontier.get()[1] # Fetch the (x,y)
+        if cur == target:
             break
 
-        for next in maze.neighbors(current[0], current[1]):
-            new_cost = cost_so_far[current] + 1  # cost to move to the next cell is always 1
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
-                cost_so_far[next] = new_cost
-                priority = new_cost + manhattan_distance(goal, next)
-                frontier.put(next, priority)
-                came_from[next] = current
+        for i in maze.neighbors(cur[0], cur[1]):
+            new_cost = cost_so_far[cur] + 1  # cost to move to the next cell is always 1 in our maze
 
-    path = reconstruct_path(came_from, start, goal)
+            if i not in cost_so_far or new_cost < cost_so_far[i]:
+                cost_so_far[i] = new_cost
+                priority = new_cost + manhattan_distance(target, i)
+                frontier.put((priority,i) )
+                came_from[i] = cur
+
+    cur = target
+    path = [cur]
+
+    while cur != start:
+        cur = came_from[cur]
+        path.append(cur)
+
+    path.reverse()
+
     return path
 
 def manhattan_distance(a, b):
@@ -124,29 +133,6 @@ def manhattan_distance(a, b):
     """
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-def reconstruct_path(came_from, start, goal):
-    """
-    Reconstructs the path from the start to the goal based on the came_from dictionary.
-
-    @param came_from: A dictionary where the keys are cells in the maze, and the values are the cells
-                      that came before them in the shortest path from start to goal.
-    @param start: The starting cell in the maze.
-    @param goal: The goal cell in the maze.
-
-    @return: A list of tuples containing the coordinates of each state in the computed path.
-    """
-    current = goal
-    path = [current]
-
-    while current != start:
-        current = came_from[current]
-        path.append(current)
-
-    path.reverse()
-    return path
-
-
-
 
 # This function is for Extra Credits, please begin this part after finishing previous two functions
 def astar_multiple(maze):
@@ -158,5 +144,42 @@ def astar_multiple(maze):
 
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
+    start = maze.start
+    target = maze.waypoints
 
-    return []
+    frontier = queue.PriorityQueue()
+    
+    frontier.put((0,start))
+    came_from = {}
+    cost_so_far = {}
+    came_from[start] = None
+    cost_so_far[start] = 0
+    visited_waypoints = {node:False for node in target}
+
+    while frontier:
+        cur = frontier.get()[1] # Fetch the (x,y)
+        for j in target:
+            if cur == j:
+                visited_waypoints[j] = True
+                if all(visited_waypoints.values) == True:
+                    break
+
+        for i in maze.neighbors(cur[0], cur[1]):
+            new_cost = cost_so_far[cur] + 1  # cost to move to the next cell is always 1 in our maze
+
+            if i not in cost_so_far or new_cost < cost_so_far[i]:
+                cost_so_far[i] = new_cost
+                priority = new_cost + manhattan_distance(target, i)
+                frontier.put((priority,i) )
+                came_from[i] = cur
+
+    cur = target
+    path = [cur]
+
+    while cur != start:
+        cur = came_from[cur]
+        path.append(cur)
+
+    path.reverse()
+
+    return path
