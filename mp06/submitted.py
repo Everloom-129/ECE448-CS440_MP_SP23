@@ -64,35 +64,35 @@ def minimax(side, board, flags, depth):
       flags (list of flags): list of flags, used by generateMoves and makeMove
       depth (int >=0): depth of the search (number of moves)
     '''
-    value = 0
+    value = 0 # init as 0
     moveList = []
     moveTree = {}
     # record all possible move in list of lists
     moves = [move for move in generateMoves(side, board, flags)]
+    # Base case: depth -> 0 or no more extra move
     if depth == 0 or len(moves) == 0:
         value = evaluate(board)
         return (value, moveList, moveTree)
-    if side == False:  # Player 0, MAX
+    # Recursive case:
+    if side == False:  
         value = -1000
-        for move in moves:
-            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
-            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
-            moveTree[encode(*move)] = subtree
+    else:
+        value = 1000
+    for move in moves:
+        newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+        newvalue,subMove,subTree =  minimax(newside, newboard, newflags, depth-1)
+        moveTree[encode(*move)] = subTree
+        # Judge the direction of evaluation
+        if side == False: # Player 0, MAX
             if value < newvalue:
                 value = newvalue
-                moveList = [move] + submove
-        return (value, moveList, moveTree)
-    
-    if side == True:  # Player 1, MIN
-        value = 1000
-        for move in moves:
-            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
-            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
-            moveTree[encode(*move)] = subtree
+                moveList = [move] + subMove
+        else:             # Player 1, MIN
             if value > newvalue:
                 value = newvalue
-                moveList = [move] + submove
-        return (value, moveList, moveTree)
+                moveList = [move] + subMove
+    return (value, moveList, moveTree)
+    
 
 
 
@@ -109,35 +109,35 @@ def alphabeta(side, board, flags, depth, alpha=-math.inf, beta=math.inf):
       flags (list of flags): list of flags, used by generateMoves and makeMove
       depth (int >=0): depth of the search (number of moves)
     '''
-    value = 0
+    # The code is based on minimax
+    value = 0 
     moveList = []
     moveTree = {}
     # record all possible move in list of lists
     moves = [move for move in generateMoves(side, board, flags)]
+    # Base case: depth -> 0 or no more extra move
     if depth == 0 or len(moves) == 0:
         value = evaluate(board)
         return (value, moveList, moveTree)
-    if side == False:  # Player 0, MAX
+    # Recursive case:
+    if side == False:  
         value = -1000
-        for move in moves:
-            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
-            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
-            moveTree[encode(*move)] = subtree
+    else:
+        value = 1000
+    for move in moves:
+        newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+        newvalue,subMove,subTree =  minimax(newside, newboard, newflags, depth-1)
+        moveTree[encode(*move)] = subTree
+        # Judge the direction of evaluation
+        if side == False: # Player 0, MAX
             if value < newvalue:
                 value = newvalue
-                moveList = [move] + submove
-        return (value, moveList, moveTree)
-    
-    if side == True:  # Player 1, MIN
-        value = 1000
-        for move in moves:
-            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
-            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
-            moveTree[encode(*move)] = subtree
+                moveList = [move] + subMove
+        else:             # Player 1, MIN
             if value > newvalue:
                 value = newvalue
-                moveList = [move] + submove
-        return (value, moveList, moveTree)
+                moveList = [move] + subMove
+    return (value, moveList, moveTree)
 
 
 
