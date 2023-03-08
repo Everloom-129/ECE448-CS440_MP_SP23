@@ -8,16 +8,21 @@ from chess.lib.core import makeMove
 # Utility function: Determine all the legal moves available for the side.
 # This is modified from chess.lib.core.legalMoves:
 #  each move has a third element specifying whether the move ends in pawn promotion
+
+
 def generateMoves(side, board, flags):
     for piece in board[side]:
         fro = piece[:2]
         for to in chess.lib.availableMoves(side, board, piece, flags):
-            promote = chess.lib.getPromote(None, side, board, fro, to, single=True)
+            promote = chess.lib.getPromote(
+                None, side, board, fro, to, single=True)
             yield [fro, to, promote]
-            
+
 ###########################################################################################
 # Example of a move-generating function:
 # Randomly choose a move.
+
+
 def random(side, board, flags, chooser):
     '''
     Return a random move, resulting board, and value of the resulting board.
@@ -31,18 +36,21 @@ def random(side, board, flags, chooser):
       flags (list of flags): list of flags, used by generateMoves and makeMove
       chooser: a function similar to random.choice, but during autograding, might not be random.
     '''
-    moves = [ move for move in generateMoves(side, board, flags) ]
+    moves = [move for move in generateMoves(side, board, flags)]
     if len(moves) > 0:
         move = chooser(moves)
-        newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+        newside, newboard, newflags = makeMove(
+            side, board, move[0], move[1], flags, move[2])
         value = evaluate(newboard)
-        return (value, [ move ], { encode(*move): {} })
+        return (value, [move], {encode(*move): {}})
     else:
         return (evaluate(board), [], {})
 
 ###########################################################################################
 # Stuff you need to write:
 # Move-generating functions using minimax, alphabeta, and stochastic search.
+
+
 def minimax(side, board, flags, depth):
     '''
     Return a minimax-optimal move sequence, tree of all boards evaluated, and value of best path.
@@ -56,7 +64,37 @@ def minimax(side, board, flags, depth):
       flags (list of flags): list of flags, used by generateMoves and makeMove
       depth (int >=0): depth of the search (number of moves)
     '''
-    raise NotImplementedError("you need to write this!")
+    value = 0
+    moveList = []
+    moveTree = {}
+    # record all possible move in list of lists
+    moves = [move for move in generateMoves(side, board, flags)]
+    if depth == 0 or len(moves) == 0:
+        value = evaluate(board)
+        return (value, moveList, moveTree)
+    if side == False:  # Player 0, MAX
+        value = -1000
+        for move in moves:
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
+            moveTree[encode(*move)] = subtree
+            if value < newvalue:
+                value = newvalue
+                moveList = [move] + submove
+        return (value, moveList, moveTree)
+    
+    if side == True:  # Player 1, MIN
+        value = 1000
+        for move in moves:
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
+            moveTree[encode(*move)] = subtree
+            if value > newvalue:
+                value = newvalue
+                moveList = [move] + submove
+        return (value, moveList, moveTree)
+
+
 
 def alphabeta(side, board, flags, depth, alpha=-math.inf, beta=math.inf):
     '''
@@ -71,8 +109,37 @@ def alphabeta(side, board, flags, depth, alpha=-math.inf, beta=math.inf):
       flags (list of flags): list of flags, used by generateMoves and makeMove
       depth (int >=0): depth of the search (number of moves)
     '''
-    raise NotImplementedError("you need to write this!")
+    value = 0
+    moveList = []
+    moveTree = {}
+    # record all possible move in list of lists
+    moves = [move for move in generateMoves(side, board, flags)]
+    if depth == 0 or len(moves) == 0:
+        value = evaluate(board)
+        return (value, moveList, moveTree)
+    if side == False:  # Player 0, MAX
+        value = -1000
+        for move in moves:
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
+            moveTree[encode(*move)] = subtree
+            if value < newvalue:
+                value = newvalue
+                moveList = [move] + submove
+        return (value, moveList, moveTree)
     
+    if side == True:  # Player 1, MIN
+        value = 1000
+        for move in moves:
+            newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
+            newvalue,submove,subtree =  minimax(newside, newboard, newflags, depth-1)
+            moveTree[encode(*move)] = subtree
+            if value > newvalue:
+                value = newvalue
+                moveList = [move] + submove
+        return (value, moveList, moveTree)
+
+
 
 def stochastic(side, board, flags, depth, breadth, chooser):
     '''
