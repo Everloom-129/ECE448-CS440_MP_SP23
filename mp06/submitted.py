@@ -117,27 +117,33 @@ def alphabeta(side, board, flags, depth, alpha=-math.inf, beta=math.inf):
     moves = [move for move in generateMoves(side, board, flags)]
     # Base case: depth -> 0 or no more extra move
     if depth == 0 or len(moves) == 0:
-        value = evaluate(board)
-        return (value, moveList, moveTree)
-    # Recursive case:
-    if side == False:  
-        value = -1000
+        return(evaluate(board),moveList,moveTree)
+    if side == False:
+        value = -math.inf
     else:
-        value = 1000
+        value =  math.inf
     for move in moves:
         newside, newboard, newflags = makeMove(side, board, move[0], move[1], flags, move[2])
-        newvalue,subMove,subTree =  minimax(newside, newboard, newflags, depth-1)
+        newvalue, subMove,subTree = alphabeta(newside,newboard,newflags,depth-1,alpha,beta)
         moveTree[encode(*move)] = subTree
-        # Judge the direction of evaluation
-        if side == False: # Player 0, MAX
+        
+        if(side == False):  # Player 0, MAX
             if value < newvalue:
                 value = newvalue
-                moveList = [move] + subMove
-        else:             # Player 1, MIN
+                moveList = [move]+ subMove
+            alpha = max(alpha,value)
+        else:               # Player 1, MIN
             if value > newvalue:
                 value = newvalue
                 moveList = [move] + subMove
-    return (value, moveList, moveTree)
+            beta = min(beta,value)
+            
+        if(alpha >= beta):
+            break
+    return (value,moveList,moveTree)        
+
+
+
 
 
 

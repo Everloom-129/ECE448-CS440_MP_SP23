@@ -145,24 +145,34 @@ def astar_multiple(maze):
     @return path: a list of tuples containing the coordinates of each state in the computed path
     """
     start = maze.start
-    target = maze.waypoints
-
     frontier = queue.PriorityQueue()
-    
+    visited_target = []
+    tmp = 1000
+    for next_target in maze.waypoints:
+        dist = manhattan_distance(start,next_target)
+        if dist < tmp:
+            tmp = dist
+            target = next_target
+
     frontier.put((0,start))
     came_from = {}
     cost_so_far = {}
     came_from[start] = None
     cost_so_far[start] = 0
-    visited_waypoints = {node:False for node in target}
 
     while frontier:
         cur = frontier.get()[1] # Fetch the (x,y)
-        for j in target:
-            if cur == j:
-                visited_waypoints[j] = True
-                if all(visited_waypoints.values) == True:
-                    break
+        if cur == target:
+            visited_target.append(target)
+            tmp = 1000
+            if visited_target == maze.waypoints:
+                break
+            for next_target in maze.waypoints:
+                dist = manhattan_distance(cur,next_target)
+                if dist < tmp and next_target not in visited_target:
+                    tmp = dist
+                    target = next_target
+            
 
         for i in maze.neighbors(cur[0], cur[1]):
             new_cost = cost_so_far[cur] + 1  # cost to move to the next cell is always 1 in our maze
