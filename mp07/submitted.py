@@ -22,8 +22,24 @@ def standardize_variables(nonstandard_rules):
     @return variables (list) - a list of the variable names that were created.
         This list should contain only the variables that were used in rules.
     '''
-    raise RuntimeError("You need to write this part!")
+    standardized_rules = copy.deepcopy(nonstandard_rules)
+    variables = []
+    title = "x000"
+    i = 1
+    for key in standardized_rules: # key is the key of given dict
+    # key may not be rule! can also be triple
+        if key[0]=="r": 
+            new_name = title + str(i)
+            for antecedent in standardized_rules[key]['antecedents']:
+                antecedent[0] = new_name
+            # standardized_rules[rule]['antecedents'][0][0] = new_name
+            standardized_rules[key]['consequent'][0] = new_name
+            variables+=[new_name]
+            i += 1
+    
     return standardized_rules, variables
+
+
 
 def unify(query, datum, variables):
     '''
@@ -73,7 +89,9 @@ def unify(query, datum, variables):
     unify([...,True],[...,False],[...]) should always return None, None, regardless of the 
       rest of the contents of the query or datum.
     '''
-    raise RuntimeError("You need to write this part!")
+    # Write a lot of if statement 12 is good
+    
+    
     return unification, subs
 
 def apply(rule, goals, variables):
