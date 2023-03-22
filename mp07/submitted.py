@@ -39,8 +39,6 @@ def standardize_variables(nonstandard_rules):
     
     return standardized_rules, variables
 
-
-
 def unify(query, datum, variables):
     '''
     @param query: proposition that you're trying to match.
@@ -61,38 +59,58 @@ def unify(query, datum, variables):
        subs[x], thus the only reason to return subs is to help the calling function
        to update other rules so that they obey the same substitutions.
 
-    Examples:
-
-    unify(['x', 'eats', 'y', False], ['a', 'eats', 'b', False], ['x','y','a','b'])
-      unification = [ 'a', 'eats', 'b', False ]
-      subs = { "x":"a", "y":"b" }
-    unify(['bobcat','eats','y',True],['a','eats','squirrel',True], ['x','y','a','b'])
-      unification = ['bobcat','eats','squirrel',True]
-      subs = { 'a':'bobcat', 'y':'squirrel' }
-    unify(['x','eats','x',True],['a','eats','a',True],['x','y','a','b'])
-      unification = ['a','eats','a',True]
-      subs = { 'x':'a' }
-    unify(['x','eats','x',True],['a','eats','bobcat',True],['x','y','a','b'])
-      unification = ['bobcat','eats','bobcat',True],
-      subs = {'x':'a', 'a':'bobcat'}
-      When the 'x':'a' substitution is detected, the query is changed to 
-      ['a','eats','a',True].  Then, later, when the 'a':'bobcat' substitution is 
-      detected, the query is changed to ['bobcat','eats','bobcat',True], which 
-      is the value returned as the answer.
-    unify(['a','eats','bobcat',True],['x','eats','x',True],['x','y','a','b'])
-      unification = ['bobcat','eats','bobcat',True],
-      subs = {'a':'x', 'x':'bobcat'}
-      When the 'a':'x' substitution is detected, the query is changed to 
-      ['x','eats','bobcat',True].  Then, later, when the 'x':'bobcat' substitution 
-      is detected, the query is changed to ['bobcat','eats','bobcat',True], which is 
-      the value returned as the answer.
-    unify([...,True],[...,False],[...]) should always return None, None, regardless of the 
-      rest of the contents of the query or datum.
+    Examples: skipped
+    [ A, needs, B, True ]
     '''
     # Write a lot of if statement 12 is good
+    unification = query[:]
+    subs = {} # substitution
+    q = copy.deepcopy(query)
+    d = copy.deepcopy(datum)
     
-    
+    if(q == None or d == None) or (q[3] ^ d[3] == True) or (q[1] != d[1]):
+        return None,None
+
+    for i in [0,2]: 
+        if q[i] in variables:
+            subs[q[i]] = d[i] # When the 'x':'a' substitution is detected.
+        else:
+            subs[d[i]] = q[i] # else q[0] is a symbol
+        for j in [0,2]:
+            if q[j] in subs.keys(): # duplicate case
+                q[j] = subs[q[j]]   # repoint to the datum
+    unification = q[:]  # turn back
     return unification, subs
+'''
+        
+    if(q[0] in variables ):
+        unification[0] = (d[0])
+
+        # if d[0] in variables:
+        #     subs[q[0]] = d[0] 
+        # else:
+        subs[q[0]] = d[0] 
+    else:
+        unification[0] = (q[0])
+        subs[d[0]] = q[0]
+    unification[1] = q[1]
+
+    if(q[2] in variables):
+        unification[2] = (d[2])
+        subs[q[2]] = d[2]
+    else:
+        unification[2] = (q[2])
+        subs[d[2]] = q[2]
+    unification[3] = q[3]
+    if(q[0] in variables and q[0] == q[2]):
+        unification[0] = (d[0])
+        unification[2] = (d[0])
+
+'''
+
+
+
+
 
 def apply(rule, goals, variables):
     '''
