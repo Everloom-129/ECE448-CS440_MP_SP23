@@ -63,7 +63,7 @@ def unify(query, datum, variables):
     [ A, needs, B, True ]
     '''
     # Write a lot of if statement 12 is good
-    unification = query[:]
+    unification = [] 
     subs = {} # substitution
     q = copy.deepcopy(query)
     d = copy.deepcopy(datum)
@@ -137,45 +137,38 @@ def apply(rule, goals, variables):
        applications[i]['consequent'] has been removed, and replaced by 
        the members of applications[i]['antecedents'].
 
-    Example:
-    rule={
-      'antecedents':[['x','is','nice',True],['x','is','hungry',False]],
-      'consequent':['x','eats','squirrel',False]
-    }
-    goals=[
-      ['bobcat','eats','squirrel',False],
-      ['bobcat','visits','squirrel',True],
-      ['bald eagle','eats','squirrel',False]
-    ]
-    variables=['x','y','a','b']
-
-    applications, newgoals = submitted.apply(rule, goals, variables)
-
-    applications==[
-      {
-        'antecedents':[['bobcat','is','nice',True],['bobcat','is','hungry',False]],
-        'consequent':['bobcat','eats','squirrel',False]
-      },
-      {
-        'antecedents':[['bald eagle','is','nice',True],['bald eagle','is','hungry',False]],
-        'consequent':['bald eagle','eats','squirrel',False]
-      }
-    ]
-    newgoals==[
-      [
-        ['bobcat','visits','squirrel',True],
-        ['bald eagle','eats','squirrel',False]
-        ['bobcat','is','nice',True],
-        ['bobcat','is','hungry',False]
-      ],[
-        ['bobcat','eats','squirrel',False]
-        ['bobcat','visits','squirrel',True],
-        ['bald eagle','is','nice',True],
-        ['bald eagle','is','hungry',False]
-      ]
+    Examples: skipped
     '''
-    raise RuntimeError("You need to write this part!")
+    applications = []
+    goalsets = []
+    G = copy.deepcopy(goals)
+    # i = 0
+    for goal in G:
+        # print(i,'\n----')
+        unified, subs = unify(rule['consequent'], goal, variables)
+        if unified is not None:
+            index = G.index(goal)
+            new_goals = G[:index] + G[index+1:] # 
+            antecedents = []
+            # print("unified ",i," is: " ,unified)
+            for proposition in rule['antecedents']:
+                new_state = []
+                for word in proposition:
+                    if word in subs.keys():
+                        word = subs[word]
+                    new_state.append(word)
+                new_state[0] = unified[0] # debug, why the first don't output?
+                antecedents.append(new_state)
+
+            applications.append({'antecedents':antecedents, 'consequent':unified})
+            goalsets.append(new_goals + antecedents)
+        # i += 1
+        
     return applications, goalsets
+
+
+
+
 
 def backward_chain(query, rules, variables):
     '''
@@ -187,5 +180,18 @@ def backward_chain(query, rules, variables):
       that, when read in sequence, conclude by proving the truth of the query.
       If no proof of the query was found, you should return proof=None.
     '''
-    raise RuntimeError("You need to write this part!")
+
+    proof = []
+    V = list(variables)
+    for rule in rules.values():
+        print(rule) 
+        applied, goalset = apply(rule,query,variables)
+        print("applied is ", applied)
+        print("goalset is ", goalset )
+        break
+    print(query)
+    print(variables)
+
+    
+
     return proof
