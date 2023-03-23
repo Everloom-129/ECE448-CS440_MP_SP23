@@ -182,16 +182,36 @@ def backward_chain(query, rules, variables):
     '''
 
     proof = []
-    V = list(variables)
-    for rule in rules.values():
-        print(rule) 
-        applied, goalset = apply(rule,query,variables)
-        print("applied is ", applied)
-        print("goalset is ", goalset )
-        break
-    print(query)
-    print(variables)
+    frontier = [ {'goal':query[:], 'proof':[]}  ] #queue.PriorityQueue([(query, [])]) #
+    layer = []
 
-    
+    for node in frontier:
+        # (goal,proof) = frontier.popleft()
+        # visited.add(goal)
 
-    return proof
+        for rule in rules.values():
+            # print(rule) 
+            # Attempt to unify the antecedent with the subgoal
+            applied, goalset = apply(rule,[node['goal']],variables)
+            if applied is []:
+                continue
+            print("applied is ", applied)
+            print("goalset is ", goalset )
+            
+            if applied is None:
+                continue
+            for app, g in zip(applied, goalset):
+                new_node = {'goal':g,'proof':node['proof'] + [app]}
+                layer.append(new_node)
+                if all(g) == [] :
+                    return new_node['proof']
+            frontier = layer
+    # print("query is ",query)
+    # print(variables)
+
+    # If we exhaust the frontier without finding a proof, return None
+    return None
+
+
+
+
