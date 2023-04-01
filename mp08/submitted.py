@@ -16,7 +16,7 @@ from math import log
 import numpy as np
 # import utils
 # define your epsilon for laplace smoothing here
-epsilon = 1e-6
+epsilon = 1e-10
 
 
 def baseline(train, test):
@@ -44,8 +44,7 @@ def baseline(train, test):
     unseen_tag = tag_time.most_common(1)[0][0]
     # Run baseline on test set
     for sentence in test:
-        new_sentence = [(word, most_tag.get(word, unseen_tag))
-                         for word in sentence]
+        new_sentence = [(word, most_tag.get(word, unseen_tag)) for word in sentence]
         output.append(new_sentence)
     return output
 
@@ -204,9 +203,12 @@ def viterbi_ec(train, test):
     alpha = epsilon
 
     initial_p = compute_initial_likelihoods(tag_pair_count, tag_count,alpha)
+    # print(initial_p)
     transition_p = compute_transition_likelihoods(tag_pair_count, tag_count,alpha)
+    # print(transition_p)
+    # emission_p = improved_emission(tag_count, tag_word_count, word_tag_count,alpha,transition_p)  # modify this 
     emission_p = compute_emission_likelihoods(tag_count, tag_word_count, word_tag_count,alpha)  
-
+    # print(emission_p)
     # Tag the test data
     predicted = []
     for sentence in test:
@@ -218,3 +220,19 @@ def viterbi_ec(train, test):
 
 
 
+def improved_emission(tag_count, tag_word_count, word_tag_count,base_alpha,transition_p):
+    emission_p = defaultdict(lambda: defaultdict(float))
+    prev_tag = 'START'
+    for tag, count in tag_count.items():
+        # alpha = base_alpha 
+        alpha = base_alpha * transition_p[tag]
+        # alpha = base_alpha *  transition_p[prev_tag][tag]
+
+        denom = count + alpha * (len(tag_word_count[tag]) + 1)
+        emission_p['UNKNOWN'][tag] = -np.log(alpha / denom)
+        for word in tag_word_count[tag]:
+            if tag in word_tag_count[word]:
+                likelihood = (word_tag_count[word][tag] + alpha) / denom
+                emission_p[word][tag] = -np.log(likelihood)
+        prev_tag = tag
+    return emission_p
