@@ -149,19 +149,9 @@ class FinetuneNet(torch.nn.Module):
         self.model = resnet18(pretrained=False)
         checkpoint = torch.load('resnet18.pt')
         self.model.load_state_dict(checkpoint)
-
-        # Freeze the backbone
-        # for param in self.model.parameters():
-        #     param.requires_grad = False
-            
-        # # Get the feature extractor of the backbone
-        # self.backbone = nn.Sequential(*list(self.model.children())[:-1])
         
-        # # Add the classification layers
-        # self.classifier = nn.Sequential(nn.Linear(512, 256),
-        #                                  nn.ReLU(),
-        #                                  nn.Dropout(0.5),
-        #                                  nn.Linear(256, 10))
+        self.model.fc = nn.Linear(self.model.fc.in_features, 8)
+
         ################## Your Code Ends here ##################
 
     def forward(self, x):
@@ -252,7 +242,7 @@ def train(train_dataloader, model, loss_fn, optimizer):
         # label_pred = model.forward(img)
         label_pred = model(img)
 
-        loss = loss_fn(label_pred, label)
+        loss = loss_fn(label_pred, label.float())
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -292,12 +282,13 @@ def test(test_dataloader, model):
         test_loss = 0
         correct = 0
         total = 0
-        for image, label in test_dataloader:
-            total+=1
-            pred = model.forward(image)
-            if pred == label:
-                correct+=1        
-    
+        for img, label in test_dataloader:
+            total+= label.size(0)
+            label_pred  = model(img)
+            pred_class = label_pred.argmax(dim=1)
+            correct += (pred_class == label).sum().item()  
+
+    test_loss /= len(test_dataloader)
     test_acc = correct / total
     print("Test loss:", test_loss)
     print("Test accuracy:", test_acc)
@@ -327,25 +318,28 @@ def run_model():
     ]
     SGD_hparams = {
         'lr': 0.002,
-        'batch_size': 32,
-        'num_epochs': 10,
-        'momentum': 0.9,
-        'optim_type': 'SGD'
+
+        'momentum': 0.9
     }
     Adam_hparams = {
-        'lr': 0.001,
-        'optim_type': 'Adam'
+        'lr': 0.001
     }
+    optim_type = 'Adam'
     loader_params = {'batch_size': 64, 'shuffle': True}
 
     dataset = build_dataset(data_files, transform=transforms.ToTensor())
     dataloader = build_dataloader(dataset,loader_params)
-    fine_model = build_model()
+    print("finished building data set")
 
+    fine_model = build_model()
+    print("finished building model")
     Cross_Etp_loss = torch.nn.CrossEntropyLoss()
-    optimizer = build_optimizer(Adam_hparams['optim_type'], fine_model.parameters(),Adam_hparams)
+    optimizer = build_optimizer(optim_type, fine_model.parameters(),Adam_hparams)
     train(dataloader, fine_model, Cross_Etp_loss, optimizer)
-    # test(dataloader,model) # buggy
+    print("finished training")
+    test(dataloader,fine_model) # buggy
+    print("finished testing")
+
     return fine_model
 
 
