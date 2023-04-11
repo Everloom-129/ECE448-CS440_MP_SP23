@@ -70,13 +70,6 @@ class CIFAR10(Dataset):
             y:      a tuple (image, label), although this is arbitrary so you can use whatever you would like.
         """
         img, label  = self.data[idx], self.labels[idx]
-
-        if self.transform:
-            img = self.transform(img)
-        
-        if self.target_transform:
-            label = self.target_transform(label)
-
         return img, label
 
 
@@ -91,7 +84,7 @@ def get_preprocess_transform(mode):
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.RandomHorizontalFlip(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # TODO: what should be normalized here?
 
         ])
     else:
@@ -153,16 +146,16 @@ class FinetuneNet(torch.nn.Module):
         """
         super().__init__()
         ################# Your Code Starts Here #################
-        resnet = resnet18(pretrained=False)
-        checkpoint = torch.load("resnet18.pt")
-        resnet.load_state_dict(checkpoint)
+        self.model = resnet18(pretrained=False)
+        checkpoint = torch.load('resnet18.pt')
+        self.model.load_state_dict(checkpoint)
 
-        # # Freeze the backbone
-        # for param in resnet.parameters():
+        # Freeze the backbone
+        # for param in self.model.parameters():
         #     param.requires_grad = False
             
         # # Get the feature extractor of the backbone
-        # self.backbone = nn.Sequential(*list(resnet.children())[:-1])
+        # self.backbone = nn.Sequential(*list(self.model.children())[:-1])
         
         # # Add the classification layers
         # self.classifier = nn.Sequential(nn.Linear(512, 256),
@@ -190,7 +183,6 @@ class FinetuneNet(torch.nn.Module):
         # logits = self.classifier(features)
         # # Normalize the logits
         # logits = F.log_softmax(logits, dim=1)
-        # return logits
         x = x.reshape(-1, 3, 32, 32)
         x = torch.tensor(x, dtype=torch.float)
         return self.model(x)
@@ -227,11 +219,10 @@ def build_optimizer(optim_type, model_params, hparams):
     """
     if optim_type == "Adam":
         optimizer = torch.optim.Adam(params = model_params, **hparams)
-    elif optim_type == "SGD":
-        optimizer = torch.optim.SGD(params = model_params, **hparams)
     else:
-        raise ValueError("Invalid optimizer type")
-    return optimizer # TODO
+        optimizer = torch.optim.SGD(params = model_params, **hparams)
+    return optimizer 
+ 
 
 """
 5. Training loop for model
@@ -255,14 +246,15 @@ def train(train_dataloader, model, loss_fn, optimizer):
     """
 
     ################# Your Code Starts Here #################
-    for img, labels in train_dataloader:
-        optimizer.zero_grad()
+
+    for img, label in train_dataloader:
+        label = F.one_hot(label.long(), num_classes=10)  # Convert label to index tensor
         label_pred = model.forward(img)
-        for label in labels:
-            label = F.one_hot(label)
-        loss = loss_fn(label_pred, labels)
+        loss = loss_fn(label_pred, label.float())
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
     
     ################## Your Code Ends here ##################
 
@@ -332,10 +324,17 @@ def run_model():
         "cifar10_batches/data_batch_5"
     ]
     dataset = build_dataset(data_files, transform=transforms.ToTensor())
-    dataloader = build_dataloader(dataset, {'batch_size': 100, 'shuffle': True})
-    model = build_model()
-    optimizer = build_optimizer("SGD", model.parameters(), {'lr': 0.002})
-    loss_fn = torch.nn.CrossEntropyLoss()
-    train(dataloader, model, loss_fn, optimizer)
-
-    return model
+    dataloader = build_dataloader(dataset, {'batch_size': 90, 'shuffle': True})
+    fine_model = build_model()
+    run_hparams = {
+        'lr': 0.001,
+        'batch_size': 32,
+        'num_epochs': 10,
+        'momentum': 0.9,
+        'optim_type': 'SGD'
+    }
+    Cross_Etp_loss = torch.nn.CrossEntropyLoss()
+    optimizer = build_optimizer(run_hparams['optim_type'], fine_model.parameters(),run_hparams)
+    train(dataloader, fine_model, Cross_Etp_loss, optimizer)
+    # test(dataloader,model) # buggy
+    return fine_model
