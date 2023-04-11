@@ -28,6 +28,8 @@ def unpickle(file):
         dict = pickle.load(fo, encoding='bytes')
     return dict
 
+# Reference:
+# - https://www.binarystudy.com/2021/09/how-to-load-preprocess-visualize-CIFAR-10-and-CIFAR-100.html
 
 """
 1.  Define and build a PyTorch Dataset
@@ -38,26 +40,45 @@ class CIFAR10(Dataset):
         Initialize your dataset here. Note that transform and target_transform
         correspond to your data transformations for train and test respectively.
         """
-        raise NotImplementedError("You need to write this part!")
-
+        self.data = []
+        self.labels = []
+        self.transform = transform
+        self.target_transform = target_transform
+        for file in data_files:
+            batch = unpickle(file)
+            self.data.append(batch[b'data'])    # b used to denote byte string
+            self.labels.extend(batch[b'labels'])
+        
+        self.data = np.concatenate(self.data).reshape(-1,3, 32, 32)
+        self.data = self.data.transpose((0, 2, 3, 1))  # convert to HWC
+        self.labels = np.array(self.labels) # turn into array for 
     def __len__(self):
         """
         Return the length of your dataset here.
         """
-        raise NotImplementedError("You need to write this part!")
+        return len(self.data)
+        
 
     def __getitem__(self, idx):
         """
         Obtain a sample from your dataset. 
 
         Parameters:
-            x:      an integer, used to index into your data.
+            idx:      an integer, used to index into your data.
 
         Outputs:
             y:      a tuple (image, label), although this is arbitrary so you can use whatever you would like.
         """
-        raise NotImplementedError("You need to write this part!")
-    
+        img, label  = self.data[idx], self.labels[idx]
+
+        if self.transform:
+            img = self.transform(img)
+        
+        if self.target_transform:
+            label = self.target_transform(label)
+
+        return img, label
+
 
 def get_preprocess_transform(mode):
     """
@@ -66,9 +87,20 @@ def get_preprocess_transform(mode):
     Outputs:
         transform:      a torchvision transforms object e.g. transforms.Compose([...]) etc.
     """
+    if mode == 'train':
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.RandomHorizontalFlip(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 
-    raise NotImplementedError("You need to write this part!")
+        ])
+    else:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 
+        ])
+    return transform
 
 def build_dataset(data_files, transform=None):
     """
@@ -78,8 +110,7 @@ def build_dataset(data_files, transform=None):
     Outputs:
         dataset:      a PyTorch dataset object to be used in training/testing
     """
-    raise NotImplementedError("You need to write this part!")
-
+    return CIFAR10(data_files, transform)
 
 """
 2.  Build a PyTorch DataLoader
@@ -96,7 +127,15 @@ def build_dataloader(dataset, loader_params):
     Outputs:
         dataloader:      a PyTorch dataloader object to be used in training/testing
     """
-    raise NotImplementedError("You need to write this part!")
+     # Extract necessary parameters from the loader_params dictionary
+    batch_size = loader_params.get("batch_size", 1)  # Default batch size is set to 1
+    shuffle = loader_params.get("shuffle", False)    # Default shuffle is set to False
+    
+    # Additional DataLoader parameters can be passed using **loader_params ？
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    
+    return dataloader
+    
 
 
 """
@@ -114,8 +153,22 @@ class FinetuneNet(torch.nn.Module):
         """
         super().__init__()
         ################# Your Code Starts Here #################
+        resnet = resnet18(pretrained=False)
+        checkpoint = torch.load("resnet18.pt")
+        resnet.load_state_dict(checkpoint)
 
-        raise NotImplementedError("You need to write this part!")
+        # # Freeze the backbone
+        # for param in resnet.parameters():
+        #     param.requires_grad = False
+            
+        # # Get the feature extractor of the backbone
+        # self.backbone = nn.Sequential(*list(resnet.children())[:-1])
+        
+        # # Add the classification layers
+        # self.classifier = nn.Sequential(nn.Linear(512, 256),
+        #                                  nn.ReLU(),
+        #                                  nn.Dropout(0.5),
+        #                                  nn.Linear(256, 10))
         ################## Your Code Ends here ##################
 
     def forward(self, x):
@@ -129,8 +182,18 @@ class FinetuneNet(torch.nn.Module):
             y:      an (N, output_size) tensor of output from the network
         """
         ################# Your Code Starts Here #################
-
-        raise NotImplementedError("You need to write this part!")
+         # Get the features from the backbone
+        # features = self.backbone(x)
+        # # Flatten the features
+        # features = torch.flatten(features, start_dim=1)
+        # # Get the classification logits
+        # logits = self.classifier(features)
+        # # Normalize the logits
+        # logits = F.log_softmax(logits, dim=1)
+        # return logits
+        x = x.reshape(-1, 3, 32, 32)
+        x = torch.tensor(x, dtype=torch.float)
+        return self.model(x)
         ################## Your Code Ends here ##################
 
 
@@ -162,8 +225,13 @@ def build_optimizer(optim_type, model_params, hparams):
     Outputs:
         optimizer:       a PyTorch optimizer object to be used in training
     """
-    raise NotImplementedError("You need to write this part!")
-
+    if optim_type == "Adam":
+        optimizer = torch.optim.Adam(params = model_params, **hparams)
+    elif optim_type == "SGD":
+        optimizer = torch.optim.SGD(params = model_params, **hparams)
+    else:
+        raise ValueError("Invalid optimizer type")
+    return optimizer # TODO
 
 """
 5. Training loop for model
@@ -187,8 +255,15 @@ def train(train_dataloader, model, loss_fn, optimizer):
     """
 
     ################# Your Code Starts Here #################
-
-    raise NotImplementedError("You need to write this part!")
+    for img, labels in train_dataloader:
+        optimizer.zero_grad()
+        label_pred = model.forward(img)
+        for label in labels:
+            label = F.one_hot(label)
+        loss = loss_fn(label_pred, labels)
+        loss.backward()
+        optimizer.step()
+    
     ################## Your Code Ends here ##################
 
 
@@ -219,7 +294,20 @@ def test(test_dataloader, model):
 
     # test_loss = something
     # print("Test loss:", test_loss)
-    raise NotImplementedError("You need to write this part!")
+    with torch.no_grad():
+        test_loss = 0
+        correct = 0
+        total = 0
+        for image, label in test_dataloader:
+            total+=1
+            pred = model.forward(image)
+            if pred == label:
+                correct+=1        
+    
+    test_acc = correct / total
+    print("Test loss:", test_loss)
+    print("Test accuracy:", test_acc)
+    return test_acc
 
 """
 7. Full model training and testing
@@ -235,5 +323,19 @@ def run_model():
     Outputs:
         model:              trained model
     """
-    raise NotImplementedError("You need to write this part!")
-    
+        # Set up hyperparameters
+    data_files = [
+        "cifar10_batches/data_batch_1",
+        "cifar10_batches/data_batch_2",
+        "cifar10_batches/data_batch_3",
+        "cifar10_batches/data_batch_4",
+        "cifar10_batches/data_batch_5"
+    ]
+    dataset = build_dataset(data_files, transform=transforms.ToTensor())
+    dataloader = build_dataloader(dataset, {'batch_size': 100, 'shuffle': True})
+    model = build_model()
+    optimizer = build_optimizer("SGD", model.parameters(), {'lr': 0.002})
+    loss_fn = torch.nn.CrossEntropyLoss()
+    train(dataloader, model, loss_fn, optimizer)
+
+    return model
