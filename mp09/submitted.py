@@ -248,9 +248,11 @@ def train(train_dataloader, model, loss_fn, optimizer):
     ################# Your Code Starts Here #################
 
     for img, label in train_dataloader:
-        label = F.one_hot(label.long(), num_classes=10)  # Convert label to index tensor
-        label_pred = model.forward(img)
-        loss = loss_fn(label_pred, label.float())
+        label = F.one_hot(label.long(), num_classes=8)  # Convert label to index tensor
+        # label_pred = model.forward(img)
+        label_pred = model(img)
+
+        loss = loss_fn(label_pred, label)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -315,7 +317,7 @@ def run_model():
     Outputs:
         model:              trained model
     """
-        # Set up hyperparameters
+    # Set up data files and parameters
     data_files = [
         "cifar10_batches/data_batch_1",
         "cifar10_batches/data_batch_2",
@@ -323,18 +325,51 @@ def run_model():
         "cifar10_batches/data_batch_4",
         "cifar10_batches/data_batch_5"
     ]
-    dataset = build_dataset(data_files, transform=transforms.ToTensor())
-    dataloader = build_dataloader(dataset, {'batch_size': 90, 'shuffle': True})
-    fine_model = build_model()
-    run_hparams = {
-        'lr': 0.001,
+    SGD_hparams = {
+        'lr': 0.002,
         'batch_size': 32,
         'num_epochs': 10,
         'momentum': 0.9,
         'optim_type': 'SGD'
     }
+    Adam_hparams = {
+        'lr': 0.001,
+        'optim_type': 'Adam'
+    }
+    loader_params = {'batch_size': 64, 'shuffle': True}
+
+    dataset = build_dataset(data_files, transform=transforms.ToTensor())
+    dataloader = build_dataloader(dataset,loader_params)
+    fine_model = build_model()
+
     Cross_Etp_loss = torch.nn.CrossEntropyLoss()
-    optimizer = build_optimizer(run_hparams['optim_type'], fine_model.parameters(),run_hparams)
+    optimizer = build_optimizer(Adam_hparams['optim_type'], fine_model.parameters(),Adam_hparams)
     train(dataloader, fine_model, Cross_Etp_loss, optimizer)
     # test(dataloader,model) # buggy
     return fine_model
+
+
+# A helper debug 
+def test_file():
+    data_files = [
+        "cifar10_batches/data_batch_1",
+        "cifar10_batches/data_batch_2",
+        "cifar10_batches/data_batch_3",
+        "cifar10_batches/data_batch_4",
+        "cifar10_batches/data_batch_5"
+    ]
+    data = []
+    labels = []
+    for file in data_files:
+        batch = unpickle(file)
+        data.append(batch[b'data'])    # b used to denote byte string
+        labels.extend(batch[b'labels'])    
+    # print(data)
+    print(len(labels))
+
+    data = np.concatenate(data).reshape(-1,3, 32, 32)
+    data = data.transpose((0, 2, 3, 1))  # convert to HWC
+    labels = np.array(labels) # turn into array for 
+    print(data.shape)
+    print(labels.shape)
+    
