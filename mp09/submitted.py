@@ -80,7 +80,7 @@ def get_preprocess_transform(mode):
     Outputs:
         transform:      a torchvision transforms object e.g. transforms.Compose([...]) etc.
     """
-    if mode == 'train':
+    if "tr" in mode:
         transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.RandomHorizontalFlip(),
@@ -149,9 +149,14 @@ class FinetuneNet(torch.nn.Module):
         self.model = resnet18(pretrained=False)
         checkpoint = torch.load('resnet18.pt')
         self.model.load_state_dict(checkpoint)
-        
-        self.model.fc = nn.Linear(self.model.fc.in_features, 8)
+        # 2. Freeze convolutional backbone
+        for param in self.model.parameters():
+            param.requires_grad = False
 
+        # 3. Initialize linear layer(s)
+        num_features = self.model.fc.in_features
+        num_classes = 8
+        self.model.fc = nn.Linear(num_features, num_classes)
         ################## Your Code Ends here ##################
 
     def forward(self, x):
@@ -239,7 +244,6 @@ def train(train_dataloader, model, loss_fn, optimizer):
 
     for img, label in train_dataloader:
         label = F.one_hot(label.long(), num_classes=8)  # Convert label to index tensor
-        # label_pred = model.forward(img)
         label_pred = model(img)
 
         loss = loss_fn(label_pred, label.float())
@@ -294,53 +298,7 @@ def test(test_dataloader, model):
     print("Test accuracy:", test_acc)
     return test_acc
 
-"""
-7. Full model training and testing
-"""
-def run_model():
-    """
-    The autograder will call this function and measure the accuracy of the returned model.
-    Make sure you understand what this function does.
-    Do not modify the signature of this function (names and parameters).
 
-    Please run your full model training and testing within this function.
-
-    Outputs:
-        model:              trained model
-    """
-    # Set up data files and parameters
-    data_files = [
-        "cifar10_batches/data_batch_1",
-        "cifar10_batches/data_batch_2",
-        "cifar10_batches/data_batch_3",
-        "cifar10_batches/data_batch_4",
-        "cifar10_batches/data_batch_5"
-    ]
-    SGD_hparams = {
-        'lr': 0.002,
-
-        'momentum': 0.9
-    }
-    Adam_hparams = {
-        'lr': 0.001
-    }
-    optim_type = 'Adam'
-    loader_params = {'batch_size': 64, 'shuffle': True}
-
-    dataset = build_dataset(data_files, transform=transforms.ToTensor())
-    dataloader = build_dataloader(dataset,loader_params)
-    print("finished building data set")
-
-    fine_model = build_model()
-    print("finished building model")
-    Cross_Etp_loss = torch.nn.CrossEntropyLoss()
-    optimizer = build_optimizer(optim_type, fine_model.parameters(),Adam_hparams)
-    train(dataloader, fine_model, Cross_Etp_loss, optimizer)
-    print("finished training")
-    test(dataloader,fine_model) # buggy
-    print("finished testing")
-
-    return fine_model
 
 
 # A helper debug 
@@ -366,4 +324,60 @@ def test_file():
     labels = np.array(labels) # turn into array for 
     print(data.shape)
     print(labels.shape)
+
+"""
+7. Full model training and testing
+"""
+def run_model():
+    """
+    The autograder will call this function and measure the accuracy of the returned model.
+    Make sure you understand what this function does.
+    Do not modify the signature of this function (names and parameters).
+
+    Please run your full model training and testing within this function.
+
+    Outputs:
+        model:              trained model
+    """
+    # Set up data files and parameters
+    data_files = [
+        "cifar10_batches/data_batch_1",
+        "cifar10_batches/data_batch_2",
+        "cifar10_batches/data_batch_3",
+        # "cifar10_batches/data_batch_4",
+        # "cifar10_batches/data_batch_5"
+    ]
+    test_batch = ["cifar10_batches/test_batch",]
+    SGD_hparams = {
+        'lr': 0.002,
+
+        'momentum': 0.9
+    }
+    Adam_hparams = {
+        'lr': 0.001
+    }
+    optim_type = 'SGD'
+    loader_params = {'batch_size': 64, 'shuffle': True}
+
+    train_dataset = build_dataset(data_files, transform= get_preprocess_transform("train"))
+    test_dataset = build_dataset(test_batch, transform= get_preprocess_transform("test"))
+
+
+    train_dataloader = build_dataloader(train_dataset,loader_params)
+    test_dataloader = build_dataloader(test_dataset,loader_params)
+    print("finished building data set")
+
+    fine_model = build_model()
+    print("finished building model")
+
+    Cross_Etp_loss = torch.nn.CrossEntropyLoss()
+
+    optimizer = build_optimizer(optim_type, fine_model.parameters(),SGD_hparams)
+    train(train_dataloader, fine_model, Cross_Etp_loss, optimizer)
+    print("finished training")
+    test(test_dataloader,fine_model)
+    print("finished testing")
+
+    return fine_model
+
     
