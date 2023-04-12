@@ -50,8 +50,7 @@ class CIFAR10(Dataset):
             self.labels.extend(batch[b'labels'])
         
         self.data = np.concatenate(self.data).reshape(-1,3, 32, 32)
-        self.data = self.data.transpose((0, 2, 3, 1))  # convert to HWC
-        self.labels = np.array(self.labels) # turn into array for 
+        self.labels = np.array(self.labels) 
     def __len__(self):
         """
         Return the length of your dataset here.
@@ -83,14 +82,13 @@ def get_preprocess_transform(mode):
     if "tr" in mode:
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.RandomHorizontalFlip(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # TODO: what should be normalized here?
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # TODO: what should be normalized here?
 
         ])
     else:
         transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) 
 
         ])
     return transform
@@ -146,17 +144,21 @@ class FinetuneNet(torch.nn.Module):
         """
         super().__init__()
         ################# Your Code Starts Here #################
-        self.model = resnet18(pretrained=False)
-        checkpoint = torch.load('resnet18.pt')
-        self.model.load_state_dict(checkpoint)
-        # 2. Freeze convolutional backbone
-        for param in self.model.parameters():
-            param.requires_grad = False
 
-        # 3. Initialize linear layer(s)
-        num_features = self.model.fc.in_features
+        # Load the pretrained ResNet18 model
+        self.backbone = resnet18(pretrained=False)
+        checkpoint = torch.load('resnet18.pt')
+        self.backbone.load_state_dict(checkpoint)
+
+        # Freeze the convolutional backbone parameters
+        for param in self.backbone.parameters():
+            param.requires_grad = False
         num_classes = 8
-        self.model.fc = nn.Linear(num_features, num_classes)
+
+        # Modify the last linear layer to match the number of classes in CIFAR10
+        num_features = self.backbone.fc.in_features
+        self.backbone.fc = nn.Linear(num_features, num_classes)
+        
         ################## Your Code Ends here ##################
 
     def forward(self, x):
@@ -170,17 +172,10 @@ class FinetuneNet(torch.nn.Module):
             y:      an (N, output_size) tensor of output from the network
         """
         ################# Your Code Starts Here #################
-         # Get the features from the backbone
-        # features = self.backbone(x)
-        # # Flatten the features
-        # features = torch.flatten(features, start_dim=1)
-        # # Get the classification logits
-        # logits = self.classifier(features)
-        # # Normalize the logits
-        # logits = F.log_softmax(logits, dim=1)
+
         x = x.reshape(-1, 3, 32, 32)
         x = torch.tensor(x, dtype=torch.float)
-        return self.model(x)
+        return self.backbone(x)
         ################## Your Code Ends here ##################
 
 
@@ -339,13 +334,12 @@ def run_model():
     Outputs:
         model:              trained model
     """
-    # Set up data files and parameters
     data_files = [
         "cifar10_batches/data_batch_1",
         "cifar10_batches/data_batch_2",
         "cifar10_batches/data_batch_3",
-        # "cifar10_batches/data_batch_4",
-        # "cifar10_batches/data_batch_5"
+        "cifar10_batches/data_batch_4",
+        "cifar10_batches/data_batch_5"
     ]
     test_batch = ["cifar10_batches/test_batch",]
     SGD_hparams = {
