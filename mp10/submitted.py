@@ -40,7 +40,7 @@ def compute_transition_matrix(model):
                         if Bound or model.W[r_next, c_next]:
                             r_next, c_next = r, c
 
-                        P[r, c, a, r_next, c_next] = model.D[r, c, idx]
+                        P[r, c, a, r_next, c_next] += model.D[r, c, idx]
             else:
                 P[r, c, :, :, :] = 0
 
