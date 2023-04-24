@@ -1,19 +1,35 @@
-'''
-MP11 submittedl.py 
-RL - q learner
-   - Deep Q
-   
-'''
-import random
-import numpy as np
-import torch
-import torch.nn as nn
+# RL on Pong game
+## Background
+Pong was the <a href="https://en.wikipedia.org/wiki/Pong">first video game produced by Atari.</a>  It is a simple game, based on table tennis.  Here is a two-person version of the game: https://commons.wikimedia.org/wiki/File:Pong_Game_Test2.gif
 
+We will be playing a one-person version of the game:
+
+* When the ball hits the top, bottom, or left wall of the playing field, it bounces.
+* The right end of the playing field is open, except for the paddle.  If the ball hits the paddle, it bounces, and the player's score increments by one.  If the ball hits the open space, the game is over; the score resets to zero, and a new game begins.
+## First goal
+The first thing you will do is to create a `q_learner` object that can store your learned Q table and your N table (table of exploration counts).  
+
+Like any other object-oriented language, python permits you to create new object classes in order to store data that will be needed from time to time.  If you are not already very, very familiar with python classes, you might want to study the python class tutorial: https://docs.python.org/3/tutorial/classes.html
+
+Like any other object in python, a `q_learner` object is created by calling its name as a function, e.g., `my_q_learner=submitted.q_learner()`.  Doing so calls the function `submitted.q_learner.__init__()`.  Let's look at the docstring to see what it should do.
+## Function
 class q_learner():
     def __init__(self, alpha, epsilon, gamma, nfirst, state_cardinality):
         '''
         Create a new q_learner object.
- 
+        Your q_learner object should store the provided values of alpha,
+        epsilon, gamma, and nfirst.
+        It should also create a Q table and an N table.
+        Q[...state..., ...action...] = expected utility of state/action pair.
+        N[...state..., ...action...] = # times state/action has been explored.
+        Both are initialized to all zeros.
+        Up to you: how will you encode the state and action in order to
+        define these two lookup tables?  The state will be a list of 5 integers,
+        such that 0 <= state[i] < state_cardinality[i] for 0 <= i < 5.
+        The action will be either -1, 0, or 1.
+        It is up to you to decide how to convert an input state and action
+        into indices that you can use to access your stored Q and N tables.
+        
         @params:
         alpha (scalar) - learning rate of the Q-learner
         epsilon (scalar) - probability of taking a random action
@@ -26,32 +42,13 @@ class q_learner():
         '''
         self.alpha = alpha
         self.epsilon = epsilon
-        self.gamma = gamma
-        self.nfirst = nfirst
         
-         # Create Q and N tables, initialized to all zeros
-        self.Q = np.zeros((5, 3)) # Actions are -1, 0, or 1
-        self.N = np.zeros((5, 3))
-        
+## Objective 
+- analyze the problem
+- complete the init part of q_learner
+- provide some note on the following RL
 
-        '''
-        - Your q_learner object should store the provided values of alpha,
-        epsilon, gamma, and nfirst.
-        
-        - It should also create a Q table and an N table.
-        Q[...state..., ...action...] = expected utility of state/action pair.
-        N[...state..., ...action...] = # times state/action has been explored.
-        Both are initialized to all zeros.
-
-        Up to you: how will you encode the state and action in order to
-        define these two lookup tables?  
-
-        - The state will be a list of 5 integers,
-        such that 0 <= state[i] < state_cardinality[i] for 0 <= i < 5.
-        - The action will be either -1, 0, or 1.
-        - It is up to you to decide how to convert an input state and action
-        into indices that you can use to access your stored Q and N tables.
-        '''
+    
     def report_exploration_counts(self, state):
         '''
         Check to see how many times each action has been explored in this state.
@@ -66,9 +63,7 @@ class q_learner():
           number of times that each action has been explored from this state.
           The mapping from actions to integers is up to you, but there must be three of them.
         '''
-        explored_count = np.array([0,0,0])
-        
-        return explored_count
+        raise RuntimeError('You need to write this!')
 
     def choose_unexplored_action(self, state):
         '''
@@ -89,7 +84,7 @@ class q_learner():
           Otherwise, choose one uniformly at random from those w/count less than n_explore.
           When you choose an action, you should increment its count in your counter table.
         '''
-        
+        raise RuntimeError('You need to write this!')
 
     def report_q(self, state):
         '''
@@ -205,82 +200,5 @@ class q_learner():
         -1 if the paddle should move upward
         0 if the paddle should be stationary
         1 if the paddle should move downward
-        '''
-        raise RuntimeError('You need to write this!')
-
-class deep_q():
-    def __init__(self, alpha, epsilon, gamma, nfirst):
-        '''
-        Create a new deep_q learner.
-        Your q_learner object should store the provided values of alpha,
-        epsilon, gamma, and nfirst.
-        It should also create a deep learning model that will accept
-        (state,action) as input, and estimate Q as the output.
-        
-        @params:
-        alpha (scalar) - learning rate of the Q-learner
-        epsilon (scalar) - probability of taking a random action
-        gamma (scalar) - discount factor
-        nfirst (scalar) - exploring each state/action pair nfirst times before exploiting
-
-        @return:
-        None
-        '''
-        raise RuntimeError('You need to write this!')
-
-    def act(self, state):
-        '''
-        Decide what action to take in the current state.
-        You are free to determine your own exploration/exploitation policy -- 
-        you don't need to use the epsilon and nfirst provided to you.
-        
-        @params: 
-        state: a list of 5 floats: ball_x, ball_y, ball_vx, ball_vy, paddle_y.
-       
-        @return:
-        -1 if the paddle should move upward
-        0 if the paddle should be stationary
-        1 if the paddle should move downward
-        '''
-        raise RuntimeError('You need to write this!')
-        
-    def learn(self, state, action, reward, newstate):
-        '''
-        Perform one iteration of training on a deep-Q model.
-        
-        @params:
-        state: a list of 5 floats: ball_x, ball_y, ball_vx, ball_vy, paddle_y
-        action: an integer, one of -1, 0, or +1
-        reward: a reward; positive for hitting the ball, negative for losing a game
-        newstate: a list of 5 floats, in the same format as state
-        
-        @return:
-        None
-        '''
-        raise RuntimeError('You need to write this!')
-        
-    def save(self, filename):
-        '''
-        Save your trained deep-Q model to a file.
-        This can save in any format you like, as long as your "load" 
-        function uses the same file format.
-        
-        @params:
-        filename (str) - filename to which it should be saved
-        @return:
-        None
-        '''
-        raise RuntimeError('You need to write this!')
-        
-    def load(self, filename):
-        '''
-        Load your deep-Q model from a file.
-        This should load from whatever file format your save function
-        used.
-        
-        @params:
-        filename (str) - filename from which it should be loaded
-        @return:
-        None
         '''
         raise RuntimeError('You need to write this!')
