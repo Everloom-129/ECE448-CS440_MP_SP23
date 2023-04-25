@@ -1,7 +1,6 @@
 '''
 MP11 submittedl.py 
 RL - q learner
-   - Deep Q
    
 '''
 import random
@@ -28,10 +27,10 @@ class q_learner():
         self.epsilon = epsilon
         self.gamma = gamma
         self.nfirst = nfirst
-        
+        self.sc = state_cardinality
          # Create Q and N tables, initialized to all zeros
-        self.Q = np.zeros((5, 3)) # Actions are -1, 0, or 1
-        self.N = np.zeros((5, 3))
+        self.Q = np.zeros((*state_cardinality, 3)) # Actions are -1, 0, or 1
+        self.N = np.zeros((*state_cardinality, 3))
         
 
         '''
@@ -67,7 +66,8 @@ class q_learner():
           The mapping from actions to integers is up to you, but there must be three of them.
         '''
         explored_count = np.array([0,0,0])
-        
+        ball_x, ball_y, ball_vx, ball_vy, paddle_y = state
+        explored_count = self.N[ball_x, ball_y, ball_vx, ball_vy, paddle_y, :]
         return explored_count
 
     def choose_unexplored_action(self, state):
@@ -89,6 +89,26 @@ class q_learner():
           Otherwise, choose one uniformly at random from those w/count less than n_explore.
           When you choose an action, you should increment its count in your counter table.
         '''
+        action = None
+            # Get the exploration counts for each action in the given state
+        explored_count = self.report_exploration_counts(state)
+
+        # Find actions that have been explored less than nfirst times
+        underexplored_actions = [i for i, count in enumerate(explored_count) if count < self.nfirst]
+
+        if not underexplored_actions:
+            # All actions have been explored at least nfirst times
+            return None
+
+        # Choose an underexplored action uniformly at random, 
+        chosen_action = random.choice(underexplored_actions) 
+        # print("chose ", chosen_action)
+
+        # Increment the exploration count for the chosen action in the N table
+        ball_x, ball_y, ball_vx, ball_vy, paddle_y = state
+        self.N[ball_x, ball_y, ball_vx, ball_vy, paddle_y, chosen_action] += 1
+        # debug: the N table is in [0,2], -1 for normalizing to [-1,0,1]
+        return chosen_action - 1 
         
 
     def report_q(self, state):
@@ -105,8 +125,9 @@ class q_learner():
           reward plus expected future utility of each of the three actions. 
           The mapping from actions to integers is up to you, but there must be three of them.
         '''
-        raise RuntimeError('You need to write this!')
-
+        ball_x, ball_y, ball_vx, ball_vy, paddle_y = state
+        q = self.Q[ball_x, ball_y, ball_vx, ball_vy, paddle_y,:]
+        return q
     def q_local(self, reward, newstate):
         '''
         The update to Q estimated from a single step of game play:
@@ -122,7 +143,12 @@ class q_learner():
         @return:
         Q_local (scalar float): the local value of Q
         '''
-        raise RuntimeError('You need to write this!')
+        ball_x, ball_y, ball_vx, ball_vy, paddle_y = newstate
+        q = self.Q[ball_x, ball_y, ball_vx, ball_vy, paddle_y, :]
+
+        Q_local = reward + self.gamma * np.max(q)
+
+        return Q_local        
 
     def learn(self, state, action, reward, newstate):
         '''
@@ -140,8 +166,15 @@ class q_learner():
         @return:
         None
         '''
-        raise RuntimeError('You need to write this!')
-    
+        action_idx = action + 1 # TODO 
+        ball_x, ball_y, ball_vx, ball_vy, paddle_y = state
+
+        q_local = self.q_local(reward, newstate)
+        q_current = self.Q[ball_x, ball_y, ball_vx, ball_vy, paddle_y, action_idx]
+        self.Q[ball_x, ball_y, ball_vx, ball_vy, paddle_y, action_idx] = (
+            q_current + self.alpha* (q_local - q_current)
+        )
+
     def save(self, filename):
         '''
         Save your Q and N tables to a file.
@@ -154,7 +187,7 @@ class q_learner():
         @return:
         None
         '''
-        raise RuntimeError('You need to write this!')
+        np.savez(filename,Q=self.Q,N=self.N)
         
     def load(self, filename):
         '''
@@ -168,7 +201,9 @@ class q_learner():
         @return:
         None
         '''
-        raise RuntimeError('You need to write this!')
+        data = np.load(filename)
+        self.Q = data['Q']
+        self.N = data['N']
         
     def exploit(self, state):
         '''
@@ -185,7 +220,17 @@ class q_learner():
         Q (scalar float): 
           The Q-value of the selected action
         '''
-        raise RuntimeError('You need to write this!')
+        choice = self.report_q(state)
+
+        optimal_q,optimal_idx = choice[0],0 
+        i = 0
+        while(i<=2):
+            if optimal_q < choice[i]:
+                optimal_q = choice[i] 
+                optimal_idx = i
+            i += 1
+        action = optimal_idx - 1
+        return action,optimal_q
     
     def act(self, state):
         '''
@@ -206,8 +251,22 @@ class q_learner():
         0 if the paddle should be stationary
         1 if the paddle should move downward
         '''
-        raise RuntimeError('You need to write this!')
-
+        action = self.choose_unexplored_action(state)
+        if action is not None:
+            return action
+        if random.random() < self.epsilon:
+            if (state[4] != 0 or 9):
+                rand_act = random.choice([-1,0,1])
+            else:
+                if (state[4] == 0):
+                    rand_act = random.choice([0,1])
+                else:
+                    rand_act = random.choice([-1,0])
+            return rand_act
+        else:
+            action, _ = self.exploit(state)
+            return action
+        
 class deep_q():
     def __init__(self, alpha, epsilon, gamma, nfirst):
         '''

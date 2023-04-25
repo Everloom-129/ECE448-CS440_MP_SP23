@@ -1,17 +1,14 @@
 # RL on Pong game
 ## Background
 Pong was the <a href="https://en.wikipedia.org/wiki/Pong">first video game produced by Atari.</a>  It is a simple game, based on table tennis.  Here is a two-person version of the game: https://commons.wikimedia.org/wiki/File:Pong_Game_Test2.gif
-
+## Change to the Pong game
 We will be playing a one-person version of the game:
 
 * When the ball hits the top, bottom, or left wall of the playing field, it bounces.
 * The right end of the playing field is open, except for the paddle.  If the ball hits the paddle, it bounces, and the player's score increments by one.  If the ball hits the open space, the game is over; the score resets to zero, and a new game begins.
-## First goal
-The first thing you will do is to create a `q_learner` object that can store your learned Q table and your N table (table of exploration counts).  
+## Objective
+  complete the q_learner class, design appropriate Q and N table
 
-Like any other object-oriented language, python permits you to create new object classes in order to store data that will be needed from time to time.  If you are not already very, very familiar with python classes, you might want to study the python class tutorial: https://docs.python.org/3/tutorial/classes.html
-
-Like any other object in python, a `q_learner` object is created by calling its name as a function, e.g., `my_q_learner=submitted.q_learner()`.  Doing so calls the function `submitted.q_learner.__init__()`.  Let's look at the docstring to see what it should do.
 ## Function
 class q_learner():
     def __init__(self, alpha, epsilon, gamma, nfirst, state_cardinality):
