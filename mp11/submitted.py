@@ -89,15 +89,14 @@ class q_learner():
           Otherwise, choose one uniformly at random from those w/count less than n_explore.
           When you choose an action, you should increment its count in your counter table.
         '''
-        action = None
-            # Get the exploration counts for each action in the given state
+        # Get the exploration counts for each action in the given state
         explored_count = self.report_exploration_counts(state)
 
         # Find actions that have been explored less than nfirst times
         underexplored_actions = [i for i, count in enumerate(explored_count) if count < self.nfirst]
-
+        
+        # All actions have been explored at least nfirst times
         if not underexplored_actions:
-            # All actions have been explored at least nfirst times
             return None
 
         # Choose an underexplored action uniformly at random, 
@@ -222,14 +221,11 @@ class q_learner():
         '''
         choice = self.report_q(state)
 
-        optimal_q,optimal_idx = choice[0],0 
-        i = 0
-        while(i<=2):
-            if optimal_q < choice[i]:
-                optimal_q = choice[i] 
-                optimal_idx = i
-            i += 1
+        optimal_idx  = np.argmax(choice)
+
         action = optimal_idx - 1
+        # action = 1- optimal_idx
+        optimal_q = choice[optimal_idx]
         return action,optimal_q
     
     def act(self, state):
@@ -254,7 +250,7 @@ class q_learner():
         action = self.choose_unexplored_action(state)
         if action is not None:
             return action
-        if random.random() < self.epsilon:
+        if random.random() <= self.epsilon:
             if (state[4] != 0 or 9):
                 rand_act = random.choice([-1,0,1])
             else:
