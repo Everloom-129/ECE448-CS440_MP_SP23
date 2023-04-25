@@ -224,17 +224,19 @@ class q_learner():
         optimal_idx  = np.argmax(choice)
 
         action = optimal_idx - 1
-        # action = 1- optimal_idx
         optimal_q = choice[optimal_idx]
         return action,optimal_q
     
     def act(self, state):
         '''
         Decide what action to take in the current state.
-        If any action has been taken less than nfirst times, then choose one of those
-        actions, uniformly at random.
-        Otherwise, with probability epsilon, choose an action uniformly at random.
-        Otherwise, choose the action with the best Q(state,action).
+
+        - If any action has been taken less than nfirst times, 
+          - then choose one of those actions, uniformly at random.
+
+        - Otherwise, with probability epsilon, choose an action uniformly at random.
+
+        - Otherwise, choose the action with the best Q(state,action).
         
         @params: 
         state: a list of 5 integers: ball_x, ball_y, ball_vx, ball_vy, paddle_y.
@@ -251,13 +253,14 @@ class q_learner():
         if action is not None:
             return action
         if random.random() <= self.epsilon:
-            if (state[4] != 0 or 9):
+            if (state[4] != 0 or state[4] != 9): # do we need detection???
                 rand_act = random.choice([-1,0,1])
             else:
                 if (state[4] == 0):
                     rand_act = random.choice([0,1])
-                else:
+                else:# state[4] ===9
                     rand_act = random.choice([-1,0])
+                    
             return rand_act
         else:
             action, _ = self.exploit(state)
