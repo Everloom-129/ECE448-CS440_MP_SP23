@@ -274,18 +274,18 @@ class DeepQ_Net(torch.nn.Module):
         Initialize your neural network here.
         """
         super().__init__()
-        ################# Your Code Starts Here #################
         self.input = 5
-        self.hidden = 64
+        self.hidden_1 = 128
+        self.hidden_2 = 64
         self.output = 3
 
         self.pred = nn.Sequential(
-            nn.Linear(self.input,self.hidden),
+            nn.Linear(self.input,self.hidden_1),
             nn.ReLU(),
-            nn.Linear(self.hidden,self.output),
+            nn.Linear(self.hidden_1, self.hidden_2),
+            nn.ReLU(),
+            nn.Linear(self.hidden_2,self.output),
         )
-
-        ################## Your Code Ends here ##################
 
     def forward(self, x):
         """
@@ -297,11 +297,8 @@ class DeepQ_Net(torch.nn.Module):
         Outputs:
             y:      an (N, output_size) tensor of output from the network
         """
-        ################# Your Code Starts Here #################
         y = self.pred(x)
-        # print(y.shape)
         return y
-        ################## Your Code Ends here ##################
 
 
 
@@ -327,6 +324,7 @@ class deep_q():
         self.epsilon = epsilon
         self.gamma = gamma
         self.nfirst = nfirst
+        self.flag = False
         self.model = DeepQ_Net()
         self.loss_fn = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.alpha)
@@ -347,8 +345,17 @@ class deep_q():
         0 if the paddle should be stationary
         1 if the paddle should move downward
         '''
-        if random.random() <= self.epsilon:
-            return random.choice([-1, 0, 1])
+
+        if random.random() <= self.epsilon and self.flag == False:
+            if (state[4] != 0 or state[4] != 9): # do we need detection???
+                rand_act = random.choice([-1,0,1])
+            else:
+                if (state[4] == 0):
+                    rand_act = random.choice([0,1])
+                else:# state[4] ===9
+                    rand_act = random.choice([-1,0])
+
+            return rand_act
         else:
             state_tensor = torch.tensor(state, dtype=torch.float32)
             q_values = self.model(state_tensor)
@@ -361,16 +368,14 @@ class deep_q():
         state (list of 5 ints): ball_x, ball_y, ball_vx, ball_vy, paddle_y.
           These are the (x,y) position of the ball, the (vx,vy) velocity of the ball,
           and the y-position of the paddle, all quantized.
-          0 <= state[i] < state_cardinality[i], for all i in [0,4].
 
         @return:
         Q (array of 3 floats): 
           reward plus expected future utility of each of the three actions. 
-          The mapping from actions to integers is up to you, but there must be three of them.
         '''
-        state_tensor = torch.tensor(state, dtype=torch.float32)
+        state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
         q_values = self.model(state_tensor)
-        return 0
+        return q_values.detach().numpy().squeeze()
            
     def learn(self, state, action, reward, newstate):
         '''
