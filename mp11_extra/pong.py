@@ -221,7 +221,7 @@ if __name__ == "__main__":
         formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--player', default = 'human',
-                        choices = ('random', 'human', 'q_learning','deep_q'),
+                        choices = ('random', 'human', 'q_learning','deep_q','q_trained'),
                         help = 'Is player a human, a random player, or some type of AI?')
     parser.add_argument('--ball_speed', default = '4',
                         help = 'How fast should the ball be (on average)?')
@@ -258,6 +258,10 @@ if __name__ == "__main__":
     elif args.player=='random':
         learner=random_learner(epsilon, paddle_speed)
         state_quantization = None
+    elif args.player=='q_trained':
+        learner = submitted.q_learner(alpha,epsilon,gamma,nfirst,state_quantization)
+        learner.load('trained_model.npz')
+        learner.flag = True
     else:
         learner=None
         state_quantization = None
