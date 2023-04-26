@@ -84,5 +84,35 @@ class deep_q():
         None
         '''
         
+# main program
+import submitted, importlib,pong
+importlib.reload(pong)
+importlib.reload(submitted)
+state_quantization = [10,10,2,2,10]
+deep_q=submitted.deep_q(0.05,0.05,0.99,5)
+
+pong_game = pong.PongGame(learner=deep_q, visible=False, state_quantization=None)
+
+states = [[x,y,vx,vy,py] for x in range(10) for y in range(10) for vx in range(2) for vy in range(2) for py in range(10) ]
+
+scores, q_achieved, q_states = pong_game.run(m_rewards=500, states=states)
+deep_q.save("trained_model.pkl")
+
+print('The number of games played was',len(scores))
+print('The number of rewards was',len(q_states))
+print('The size of each returned Q-matrix was',q_states[0].shape)
+
+## terminal traceback
+the game runs for 400 times, and crash
+
+ValueError                                Traceback (most recent call last)
+Cell In[20], line 4
+      1 importlib.reload(submitted)
+      2 states = [[x,y,vx,vy,py] for x in range(10) for y in range(10) for vx in range(2) for vy in range(2) for py in range(10) ]
+----> 4 scores, q_achieved, q_states = pong_game.run(m_rewards=500, states=states)
+      5 deep_q.save("trained_model.pkl")
+      7 print('The number of games played was',len(scores))
+
+ValueError: too many values to unpack (expected 3)
 ## objective
-complete the deep_q class step by step 
+analyze why

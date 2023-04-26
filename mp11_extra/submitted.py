@@ -329,9 +329,11 @@ class deep_q():
         self.nfirst = nfirst
         self.model = DeepQ_Net()
         self.loss_fn = nn.MSELoss()
-        self.optimizer = torch.optim.SGD(self.model.parameters(),lr=self.alpha) # stochastic gradient decendant
+        # self.optimizer = torch.optim.SGD(self.model.parameters(),lr=self.alpha) # stochastic gradient decendant
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.alpha)
     
     
+
     def act(self, state):
         '''
         Decide what action to take in the current state.
@@ -353,7 +355,24 @@ class deep_q():
             q_values = self.model(state_tensor)
             return torch.argmax(q_values).item() - 1
 
-        
+    def report_q(self, state):
+        '''
+        Report the current Q values for the given state.
+        @params:
+        state (list of 5 ints): ball_x, ball_y, ball_vx, ball_vy, paddle_y.
+          These are the (x,y) position of the ball, the (vx,vy) velocity of the ball,
+          and the y-position of the paddle, all quantized.
+          0 <= state[i] < state_cardinality[i], for all i in [0,4].
+
+        @return:
+        Q (array of 3 floats): 
+          reward plus expected future utility of each of the three actions. 
+          The mapping from actions to integers is up to you, but there must be three of them.
+        '''
+        state_tensor = torch.tensor(state, dtype=torch.float32)
+        q_values = self.model(state_tensor)
+        return 0
+           
     def learn(self, state, action, reward, newstate):
         '''
         Perform one iteration of training on a deep-Q model.
