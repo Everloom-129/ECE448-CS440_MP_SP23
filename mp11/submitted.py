@@ -254,7 +254,7 @@ class q_learner():
         if action is not None:
             return action
         if random.random() <= self.epsilon and self.flag == False:
-            if (state[4] != 0 or state[4] != 9): # do we need detection???
+            if (state[4] != 0 and state[4] != 9): # do we need detection???
                 rand_act = random.choice([-1,0,1])
             else:
                 if (state[4] == 0):
