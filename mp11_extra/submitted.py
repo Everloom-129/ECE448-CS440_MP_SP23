@@ -267,6 +267,44 @@ class q_learner():
             action, _ = self.exploit(state)
             return action
         
+#Helper class, directly cited from mp4
+class DeepQ_Net(torch.nn.Module):
+    def __init__(self):
+        """
+        Initialize your neural network here.
+        """
+        super().__init__()
+        ################# Your Code Starts Here #################
+        self.input = 5
+        self.hidden = 128
+        self.output = 3
+
+        self.pred = nn.Sequential(
+            nn.Linear(self.input,self.hidden),
+            nn.ReLU(),
+            nn.Linear(self.hidden,self.output),
+        )
+
+        ################## Your Code Ends here ##################
+
+    def forward(self, x):
+        """
+        Perform a forward pass through your neural net.
+
+        Parameters:
+            x:      an (N, input_size) tensor, where N is arbitrary.
+
+        Outputs:
+            y:      an (N, output_size) tensor of output from the network
+        """
+        ################# Your Code Starts Here #################
+        y = self.pred(x)
+        # print(y.shape)
+        return y
+        ################## Your Code Ends here ##################
+
+
+
 class deep_q():
     def __init__(self, alpha, epsilon, gamma, nfirst):
         '''
@@ -285,8 +323,15 @@ class deep_q():
         @return:
         None
         '''
-        raise RuntimeError('You need to write this!')
-
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.gamma = gamma
+        self.nfirst = nfirst
+        self.model = DeepQ_Net()
+        self.loss_fn = nn.MSELoss()
+        self.optimizer = torch.optim.SGD(self.model.parameters(),lr=self.alpha) # stochastic gradient decendant
+    
+    
     def act(self, state):
         '''
         Decide what action to take in the current state.
@@ -301,7 +346,13 @@ class deep_q():
         0 if the paddle should be stationary
         1 if the paddle should move downward
         '''
-        raise RuntimeError('You need to write this!')
+        if random.random() <= self.epsilon:
+            return random.choice([-1, 0, 1])
+        else:
+            state_tensor = torch.tensor(state, dtype=torch.float32)
+            q_values = self.model(state_tensor)
+            return torch.argmax(q_values).item() - 1
+
         
     def learn(self, state, action, reward, newstate):
         '''
@@ -316,8 +367,18 @@ class deep_q():
         @return:
         None
         '''
-        raise RuntimeError('You need to write this!')
+        self.optimizer.zero_grad()
         
+        state_tensor = torch.tensor(state, dtype=torch.float32)
+        newstate_tensor = torch.tensor(newstate, dtype=torch.float32)
+        q_values = self.model(state_tensor)
+        next_q_values = self.model(newstate_tensor)
+        target_q_values = q_values.clone()
+        target_q_values[action + 1] = reward + self.gamma * torch.max(next_q_values)
+        loss = self.loss_fn(q_values, target_q_values)
+        loss.backward()
+        self.optimizer.step()
+
     def save(self, filename):
         '''
         Save your trained deep-Q model to a file.
@@ -329,7 +390,8 @@ class deep_q():
         @return:
         None
         '''
-        raise RuntimeError('You need to write this!')
+        torch.save(self.model.state_dict(), filename)
+        
         
     def load(self, filename):
         '''
@@ -342,4 +404,5 @@ class deep_q():
         @return:
         None
         '''
-        raise RuntimeError('You need to write this!')
+        self.model.load_state_dict(torch.load(filename))
+        self.model.eval()
