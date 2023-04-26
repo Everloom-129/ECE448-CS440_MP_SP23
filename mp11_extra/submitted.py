@@ -276,7 +276,7 @@ class DeepQ_Net(torch.nn.Module):
         super().__init__()
         ################# Your Code Starts Here #################
         self.input = 5
-        self.hidden = 128
+        self.hidden = 64
         self.output = 3
 
         self.pred = nn.Sequential(
@@ -329,7 +329,6 @@ class deep_q():
         self.nfirst = nfirst
         self.model = DeepQ_Net()
         self.loss_fn = nn.MSELoss()
-        # self.optimizer = torch.optim.SGD(self.model.parameters(),lr=self.alpha) # stochastic gradient decendant
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.alpha)
     
     

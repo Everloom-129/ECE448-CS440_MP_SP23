@@ -206,7 +206,7 @@ class PongGame():
             state = newstate
             
         # Return value depends on learner type
-        if type(self.learner)==submitted.q_learner or type(self.learner)==submitted.deep_q:
+        if True: #type(self.learner)==submitted.q_learner or type(self.learner)==submitted.deep_q:
             return scores, q_achieved, q_states
         else:
             return scores
