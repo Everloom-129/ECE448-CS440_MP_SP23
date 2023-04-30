@@ -159,7 +159,7 @@ class PongGame():
         scores = [ 0 ]
         q_achieved = []
         q_states = []
-        
+        print("Starting run model, model type is ", type(self.learner))
         while n_rewards < m_rewards and n_games < m_games and n_frames < m_frames:
             n_frames += 1
             
@@ -204,9 +204,9 @@ class PongGame():
                     q_achieved.append(self.learner.report_q(state))
                     q_states.append(np.array([self.learner.report_q(s) for s in states]))
             state = newstate
-            
+        print("finished training")
         # Return value depends on learner type
-        if True: #type(self.learner)==submitted.q_learner or type(self.learner)==submitted.deep_q:
+        if type(self.learner)==submitted.q_learner or type(self.learner)==submitted.deep_q:
             return scores, q_achieved, q_states
         else:
             return scores
@@ -259,9 +259,8 @@ if __name__ == "__main__":
         learner=random_learner(epsilon, paddle_speed)
         state_quantization = None
     elif args.player=='q_trained':
-        learner = submitted.q_learner(alpha,epsilon,gamma,nfirst,state_quantization)
-        learner.load('trained_model.npz')
-        learner.flag = True
+        learner = submitted.deep_q(alpha,epsilon,gamma,nfirst)
+        learner.load('trained_model.pkl')
     else:
         learner=None
         state_quantization = None

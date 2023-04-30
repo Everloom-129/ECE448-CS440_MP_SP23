@@ -275,8 +275,9 @@ class DeepQ_Net(torch.nn.Module):
         """
         super().__init__()
         self.input = 5
-        self.hidden_1 = 128
-        self.hidden_2 = 64
+        self.hidden_1 = 64
+        self.hidden_2 = 32
+        self.hidden_3 = 16
         self.output = 3
 
         self.pred = nn.Sequential(
@@ -284,20 +285,19 @@ class DeepQ_Net(torch.nn.Module):
             nn.ReLU(),
             nn.Linear(self.hidden_1, self.hidden_2),
             nn.ReLU(),
-            nn.Linear(self.hidden_2,self.output),
+            nn.Linear(self.hidden_2,self.hidden_3),
+            nn.ReLU(),
+            nn.Linear(self.hidden_3,self.output),
         )
 
-    def forward(self, x):
+    def forward(self, state):
         """
-        Perform a forward pass through your neural net.
-
         Parameters:
-            x:      an (N, input_size) tensor, where N is arbitrary.
-
+            state:     state tensor,
         Outputs:
-            y:      an (N, output_size) tensor of output from the network
+            y:      [-1,0,1] action
         """
-        y = self.pred(x)
+        y = self.pred(state)
         return y
 
 
@@ -327,8 +327,7 @@ class deep_q():
         self.flag = False
         self.model = DeepQ_Net()
         self.loss_fn = nn.MSELoss()
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.alpha)
-    
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.alpha)
     
 
     def act(self, state):
@@ -347,7 +346,7 @@ class deep_q():
         '''
 
         if random.random() <= self.epsilon and self.flag == False:
-            if (state[4] != 0 or state[4] != 9): # do we need detection???
+            if True : # (state[4] != 0 or state[4] != 9): # do we need detection???
                 rand_act = random.choice([-1,0,1])
             else:
                 if (state[4] == 0):
@@ -357,9 +356,10 @@ class deep_q():
 
             return rand_act
         else:
-            state_tensor = torch.tensor(state, dtype=torch.float32)
-            q_values = self.model(state_tensor)
-            return torch.argmax(q_values).item() - 1
+            with torch.no_grad():
+                state_tensor = torch.tensor(state, dtype=torch.float32)
+                q_values = self.model.forward(state_tensor)
+                return torch.argmax(q_values).item() - 1
 
     def report_q(self, state):
         '''
@@ -374,7 +374,8 @@ class deep_q():
           reward plus expected future utility of each of the three actions. 
         '''
         state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0)
-        q_values = self.model(state_tensor)
+        with torch.no_grad():
+            q_values = self.model(state_tensor)
         return q_values.detach().numpy().squeeze()
            
     def learn(self, state, action, reward, newstate):
@@ -390,15 +391,15 @@ class deep_q():
         @return:
         None
         '''
-        self.optimizer.zero_grad()
         
         state_tensor = torch.tensor(state, dtype=torch.float32)
         newstate_tensor = torch.tensor(newstate, dtype=torch.float32)
-        q_values = self.model(state_tensor)
-        next_q_values = self.model(newstate_tensor)
+        q_values = self.model.forward(state_tensor)
+        next_q_values = self.model.forward(newstate_tensor)
         target_q_values = q_values.clone()
         target_q_values[action + 1] = reward + self.gamma * torch.max(next_q_values)
         loss = self.loss_fn(q_values, target_q_values)
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
