@@ -2,3 +2,6 @@ gradescope-utils>=0.2.7
 numpy>=1.15
 pygame
 torch
+# extra-credit tooling: offline experiment tracking and the figures
+wandb>=0.16
+matplotlib>=3.7

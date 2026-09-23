@@ -261,6 +261,9 @@ if __name__ == "__main__":
     elif args.player=='q_trained':
         learner = submitted.deep_q(alpha,epsilon,gamma,nfirst)
         learner.load('trained_model.pkl')
+        # deep_q is trained on raw, unquantized states -- without this line the
+        # branch above would hand it quantized ints, unlike the 'deep_q' branch.
+        state_quantization = None
     else:
         learner=None
         state_quantization = None

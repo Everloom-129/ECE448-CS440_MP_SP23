@@ -116,3 +116,48 @@ Cell In[20], line 4
 ValueError: too many values to unpack (expected 3)
 ## objective
 analyze why
+## analysis: why `run()` returned one value instead of three
+
+`pong.PongGame.run` decides its return shape by an **identity** check on the
+learner's class, not by duck typing:
+
+```python
+if type(self.learner)==submitted.q_learner or type(self.learner)==submitted.deep_q:
+    return scores, q_achieved, q_states
+else:
+    return scores
+```
+
+The notebook creates the learner, then reloads the module again before running:
+
+```python
+importlib.reload(submitted)
+deep_q = submitted.deep_q(...)          # instance of class object A
+pong_game = pong.PongGame(learner=deep_q, ...)
+
+importlib.reload(submitted)             # <-- rebinds submitted.deep_q to class object B
+scores, q_achieved, q_states = pong_game.run(...)
+```
+
+`importlib.reload` re-executes the module body in place, so `submitted.deep_q`
+now points at a **new** class object. The learner still references the old one,
+`type(self.learner) == submitted.deep_q` is `False`, and `run` falls through to
+the single-value branch. The traceback appears only at the end of the run —
+after ~400 games — because that is when `run` finally returns.
+
+`pong` also holds its own `import submitted` binding, so the comparison is made
+against whatever `submitted.deep_q` names at call time.
+
+Three ways out, in order of preference:
+
+1. Construct the learner *after* the last `reload`, so instance and class agree.
+2. Restart the kernel instead of reloading; `importlib.reload` and `isinstance`
+   checks do not mix well.
+3. Assign the result to one name and unpack afterwards:
+   `result = pong_game.run(...)` then check `len(result)`.
+
+The training in `train_deepq.py` avoids the problem entirely: it drives
+`game.update()` in its own loop rather than going through `run()`, so no
+`type(...)` comparison is involved. The autograder in `tests/test_extra.py`
+imports `submitted` once and never reloads, so it always takes the
+three-value branch.
