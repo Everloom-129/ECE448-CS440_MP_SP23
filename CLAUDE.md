@@ -51,6 +51,15 @@ Tests import `submitted` directly and assert numeric closeness to a stored groun
 
 Some MPs carry extra graded surfaces: `mp08_Hidden_Markov_Model/tests/test_visible_ec.py` (extra credit, auto-discovered alongside the visible tests) and `mp06_Minimax_Game/mp06_extracredit.zip`.
 
+## Per-MP guidance
+
+Every `mpNN_*/` directory has its own `CLAUDE.md` with the contracts, shapes
+and grading thresholds specific to it. **Read that first when working inside
+one** — several MPs grade in ways this file does not describe (mp05 scores how
+many states you explored, mp08 grades accuracy thresholds rather than a stored
+answer, mp06 grades the search tree including what you pruned, mp04 enforces a
+parameter-count band).
+
 ## MP index
 
 `mp01` joint/marginal/conditional distributions · `mp02` naive Bayes text classification · `mp03` k-NN · `mp04` neural nets in PyTorch · `mp05` BFS / A* maze search · `mp06` minimax, alpha-beta, stochastic search over chess · `mp07` unification and forward chaining · `mp08` HMM POS tagging (Viterbi) · `mp09` CNN perception on CIFAR-10 · `mp10` MDP value iteration · `mp11` reinforcement learning on Pong.

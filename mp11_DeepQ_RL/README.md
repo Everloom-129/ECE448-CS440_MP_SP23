@@ -197,6 +197,16 @@ The headline model is still the 600k-frame transformer at 8,755.
 
 ## Watching it play
 
+![the trained transformer playing pong](figures/rollout.gif)
+
+Full 60-second clip, 39 consecutive rallies without a miss:
+**[figures/rollout.mp4](figures/rollout.mp4)** (GitHub will not play an mp4
+inline from markdown, so the gif above is the preview.)
+
+| | |
+|---|---|
+| ![backbone comparison](figures/fig_architectures.png) | ![policy maps](figures/fig_policy.png) |
+
 `visualize.py video` writes `figures/rollout.mp4` (H.264, 1280x660, 50 fps):
 the board with a fading ball trail on the left, the network's three action
 values on the right with the chosen one highlighted.
